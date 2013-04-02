@@ -137,6 +137,7 @@ private:
 	std::unique_ptr<hook_table> hook_tab;
 
 	friend class hook_table;
+	friend class result;
 
 public:
 	connection();
@@ -191,14 +192,15 @@ class result;
 
 class statement {
 private:
+	connection &c;
 	sqlite3_stmt *handle;
 
-	explicit statement(sqlite3_stmt *a_handle);
+	statement(connection &c, sqlite3_stmt *a_handle);
 
 	friend class connection;
 	friend class column;
 	friend class parameter;
-	//friend class result;
+	friend class result;
 
 public:
 	~statement();
@@ -243,9 +245,12 @@ public:
 class result {
 private:
 	statement &s;
+	bool onrow;
 
 	explicit result(statement &a_s) : s(a_s) {
 	};
+
+	friend class statement;
 
 public:
 	class iterator : public std::iterator<std::input_iterator_tag, result> {
@@ -254,53 +259,28 @@ public:
 		size_t pos;
 
 	public:
-		explicit iterator(result *a_r = nullptr) : r(a_r), pos((size_t)-1) {
-			if (a_r) {
-				// advance to first result element
-				++(*this);
-			}
-		}
+		explicit iterator(result *a_r = nullptr);
 
-		result& operator*() const {
-			return *r;
-		}
+		result& operator*() const { return *r; }
 
-		iterator& operator++() {
-			if (r->next())
-				++pos;
-			else
-				pos = (size_t)-1;
-			return *this;
-		}
+		iterator& operator++();
 		// Not reasonable implementable:
 		//operator++(int);
 
-		bool operator==(const iterator &other) const {
-			return (pos == other.pos);
-		}
-		bool operator!=(const iterator &other) const {
-			return !(*this == other);
-		}
+		bool operator==(const iterator &other) const { return (pos == other.pos); }
+		bool operator!=(const iterator &other) const { return !(*this == other); }
 	};
 
-	int col_count() const {
-		return s.col_count();
-	}
-	column col(int idx) {
-		return s.col(idx);
-	}
+	int col_count() const { return s.col_count(); }
+	column col(int idx) { return s.col(idx); }
+	//const column col(int idx) const { return s.col(idx); }
 
-	bool next() {
-		return s.step();
-	}
+	bool next();
+	operator bool() const { return onrow; }
 
-	iterator begin() {
-		return iterator(this);
-	}
+	iterator begin() { return iterator(this); }
 
-	iterator end() {
-		return iterator();
-	}
+	iterator end() { return iterator(); }
 
 	int changes() const;
 };

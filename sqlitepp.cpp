@@ -211,7 +211,7 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 */
 
 void connection::exec(const char *sql) {
-	prepare(sql).exec();
+	prepare(sql).run();
 }
 
 statement connection::prepare(const char *sql) {
@@ -223,7 +223,7 @@ statement connection::prepare(const char *sql) {
 		throw static_error(rv);
 	}
 
-	return statement(stmt);
+	return statement(*this, stmt);
 }
 
 void connection::interrupt() {
@@ -249,7 +249,7 @@ void connection::release_memory() {
 // ---------------------------------------------------------------------------
 // statement
 
-statement::statement(sqlite3_stmt *a_handle) : handle(a_handle) {
+statement::statement(connection &a_c, sqlite3_stmt *a_handle) : c(a_c), handle(a_handle) {
 }
 
 statement::~statement() {
@@ -293,23 +293,11 @@ column statement::col(int idx) {
 	return column(*this, idx);
 }
 
-bool statement::step() {
-	int rv;
-
-	rv = sqlite3_step(handle);
-	if (rv == SQLITE_ROW) {
-		return true;
-	}
-	else if (rv == SQLITE_DONE) {
-		return false;
-	}
-	else {
-		throw static_error(rv);
-	}
-}
-
-void statement::exec() {
-	step();
+result statement::run() {
+	result r(*this);
+	// Run query and go to first result row
+	r.next();
+	return r;
 }
 
 void statement::reset() {
@@ -441,11 +429,42 @@ blob column::val<blob>() const {
 	return std::make_pair(data, len);
 }
 
-/*
-int result::changes() {
+
+result::iterator::iterator(result *a_r) : r(a_r), pos((size_t)-1) {
+	if (a_r) {
+		// advance to first result element
+		++(*this);
+	}
+}
+
+result::iterator& result::iterator::operator++() {
+	if (r->next())
+		++pos;
+	else
+		pos = (size_t)-1;
+	return *this;
+}
+
+bool result::next() {
+	int rv;
+
+	rv = sqlite3_step(s.handle);
+	if (rv == SQLITE_ROW) {
+		onrow = true;
+	}
+	else if (rv == SQLITE_DONE) {
+		onrow = false;
+	}
+	else {
+		throw static_error(rv);
+	}
+	return onrow;
+}
+
+int result::changes() const {
 	return sqlite3_changes(s.c.handle);
 }
-*/
+
 
 struct lib_setup {
 	lib_setup() {
