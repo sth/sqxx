@@ -2,7 +2,6 @@
 // (c) 2013 Stephan Hohe
 
 #include "sqlitepp.hpp"
-#include "sqlitepp_hooks.hpp"
 #include "sqlitepp_detail.hpp"
 #include <sqlite3.h>
 #include <cstring>
