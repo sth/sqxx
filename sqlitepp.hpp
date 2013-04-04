@@ -120,7 +120,7 @@ std::vector<T> column::val<std::vector<T>>() const {
 }
 */
 
-struct hook_table;
+struct callback_table;
 
 struct column_metadata {
 	const char *datatype;
@@ -134,10 +134,12 @@ class connection {
 private:
 	sqlite3 *handle;
 
-	std::unique_ptr<hook_table> hook_tab;
+	std::unique_ptr<callback_table> callbacks;
 
-	friend class hook_table;
+	friend class callback_table;
 	friend class result;
+
+	void setup_callbacks();
 
 public:
 	connection();
@@ -180,9 +182,48 @@ public:
 	void interrupt();
 	int limit(int id, int newValue);
 
-	hook_table& hooks();
-
+	void busy_timeout(int ms);
 	void release_memory();
+
+	/* sqlite3_commit_hook() */
+	typedef std::function<int ()> commit_handler_t;
+	void set_commit_handler(const commit_handler_t &fun);
+	void set_commit_handler();
+
+	/* sqlite3_rollback_hook() */
+	typedef std::function<void ()> rollback_handler_t;
+	void set_rollback_handler(const rollback_handler_t &fun);
+	void set_rollback_handler();
+
+	/* sqlite3_update_hook() */
+	typedef std::function<void (int, const char*, const char *, int64_t)> update_handler_t;
+	void set_update_handler(const update_handler_t &fun);
+	void set_update_handler();
+
+	/* sqlite3_trace() */
+	typedef std::function<void (const char*)> trace_handler_t;
+	void set_trace_handler(const trace_handler_t &fun);
+	void set_trace_handler();
+
+	/* sqlite3_profile() */
+	typedef std::function<void (const char*, uint64_t)> profile_handler_t;
+	void set_profile_handler(const profile_handler_t &fun);
+	void set_profile_handler();
+
+	/* sqlite3_set_authorizer() */
+	typedef std::function<int (int, const char*, const char*, const char*, const char*)> authorize_handler_t;
+	void set_authorize_handler(const authorize_handler_t &fun);
+	void set_authorize_handler();
+
+	/* sqlite3_busy_handler() */
+	typedef std::function<bool (int)> busy_handler_t;
+	void set_busy_handler(const busy_handler_t &busy);
+	void set_busy_handler();
+
+	/* sqlite3_collation_needed() */
+	typedef std::function<void (connection&, const char*)> collation_handler_t;
+	void set_collation_handler(const collation_handler_t &fun);
+	void set_collation_handler();
 
 	sqlite3* raw() { return handle; }
 };
