@@ -506,7 +506,7 @@ void connection::set_collation_handler() {
 // ---------------------------------------------------------------------------
 // statement
 
-statement::statement(connection &a_c, sqlite3_stmt *a_handle) : c(a_c), handle(a_handle) {
+statement::statement(connection &conn_arg, sqlite3_stmt *handle_arg) : handle(handle_arg), conn(conn_arg) {
 }
 
 statement::~statement() {
@@ -578,30 +578,30 @@ void statement::clear_bindings() {
 // ---------------------------------------------------------------------------
 // parameter
 
-parameter::parameter(statement &a_s, int a_idx) : s(a_s), idx(a_idx) {
+parameter::parameter(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
 }
 
 const char* parameter::name() {
-	const char *n = sqlite3_bind_parameter_name(s.handle, idx);
+	const char *n = sqlite3_bind_parameter_name(stmt.raw(), idx);
 	if (!n)
 		throw error(SQLITE_RANGE, "cannot determine parameter name");
 	return n;
 }
 
 void parameter::bind(int value) {
-	int rv = sqlite3_bind_int(s.handle, idx, value);
+	int rv = sqlite3_bind_int(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind(int64_t value) {
-	int rv = sqlite3_bind_int64(s.handle, idx, value);
+	int rv = sqlite3_bind_int64(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind(double value) {
-	int rv = sqlite3_bind_double(s.handle, idx, value);
+	int rv = sqlite3_bind_double(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
@@ -609,21 +609,21 @@ void parameter::bind(double value) {
 void parameter::bind(const char *value, bool copy) {
 	int rv;
 	if (value == nullptr)
-		rv = sqlite3_bind_null(s.handle, idx);
+		rv = sqlite3_bind_null(stmt.raw(), idx);
 	else
-		rv = sqlite3_bind_text(s.handle, idx, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		rv = sqlite3_bind_text(stmt.raw(), idx, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind(const blob &value, bool copy) {
-	int rv = sqlite3_bind_blob(s.handle, idx, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	int rv = sqlite3_bind_blob(stmt.raw(), idx, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind_zeroblob(int len) {
-	int rv = sqlite3_bind_zeroblob(s.handle, idx, len);
+	int rv = sqlite3_bind_zeroblob(stmt.raw(), idx, len);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
@@ -631,58 +631,59 @@ void parameter::bind_zeroblob(int len) {
 // ---------------------------------------------------------------------------
 // column
 
-column::column(statement &a_s, int a_idx) : s(a_s), idx(a_idx) {
+column::column(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
 }
 
 const char* column::name() const {
-	return sqlite3_column_name(s.handle, idx);
+	return sqlite3_column_name(stmt.raw(), idx);
 }
 
 const char* column::database_name() const {
-	return sqlite3_column_database_name(s.handle, idx);
+	return sqlite3_column_database_name(stmt.raw(), idx);
 }
 
 const char* column::table_name() const {
-	return sqlite3_column_table_name(s.handle, idx);
+	return sqlite3_column_table_name(stmt.raw(), idx);
 }
 
 const char* column::origin_name() const {
-	return sqlite3_column_origin_name(s.handle, idx);
+	return sqlite3_column_origin_name(stmt.raw(), idx);
 }
 
 int column::type() const {
-	return sqlite3_column_type(s.handle, idx);
+	return sqlite3_column_type(stmt.raw(), idx);
 }
 
 const char* column::decl_type() const {
-	return sqlite3_column_decltype(s.handle, idx);
+	return sqlite3_column_decltype(stmt.raw(), idx);
 }
 
 
 template<>
 int column::val<int>() const {
-	return sqlite3_column_int(s.handle, idx);
+	return sqlite3_column_int(stmt.raw(), idx);
 }
 
 template<>
 int64_t column::val<int64_t>() const {
-	return sqlite3_column_int64(s.handle, idx);
+	return sqlite3_column_int64(stmt.raw(), idx);
 }
 
 template<>
 double column::val<double>() const {
-	return sqlite3_column_double(s.handle, idx);
+	return sqlite3_column_double(stmt.raw(), idx);
 }
 
 template<>
 const char* column::val<const char*>() const {
-	return reinterpret_cast<const char*>(sqlite3_column_text(s.handle, idx));
+	return reinterpret_cast<const char*>(sqlite3_column_text(stmt.raw(), idx));
 }
 
 template<>
 blob column::val<blob>() const {
-	const void* data = sqlite3_column_blob(s.handle, idx);
-	int len = sqlite3_column_bytes(s.handle, idx);
+	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
+	const void *data = sqlite3_column_blob(stmt.raw(), idx);
+	int len = sqlite3_column_bytes(stmt.raw(), idx);
 	return std::make_pair(data, len);
 }
 
@@ -705,7 +706,7 @@ result::iterator& result::iterator::operator++() {
 bool result::next() {
 	int rv;
 
-	rv = sqlite3_step(s.handle);
+	rv = sqlite3_step(stmt.raw());
 	if (rv == SQLITE_ROW) {
 		onrow = true;
 	}
@@ -719,7 +720,7 @@ bool result::next() {
 }
 
 int result::changes() const {
-	return sqlite3_changes(s.c.handle);
+	return sqlite3_changes(stmt.conn.raw());
 }
 
 

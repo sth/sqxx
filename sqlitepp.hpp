@@ -25,6 +25,8 @@ public:
 };
 
 
+// TODO: blob_iterator?
+
 typedef std::pair<const void*, int> blob;
 
 inline blob make_blob(const void *data, int len) {
@@ -66,12 +68,11 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 class statement;
 
 class parameter {
-private:
-	statement &s;
+public:
+	statement &stmt;
 	int idx;
 
-public:
-	parameter(statement &s, int idx);
+	parameter(statement &a_stmt, int a_idx);
 
 	const char* name();
 
@@ -88,11 +89,10 @@ public:
 
 
 class column {
-private:
-	statement &s;
+public:
+	statement &stmt;
 	int idx;
 
-public:
 	column(statement &s, int idx);
 
 	const char* name() const;
@@ -106,6 +106,8 @@ public:
 	template<typename T>
 	T val() const;
 };
+
+// TODO: conversion operators instead of val<>()?
 
 template<> int column::val<int>() const;
 template<> int64_t column::val<int64_t>() const;
@@ -137,7 +139,6 @@ private:
 	std::unique_ptr<callback_table> callbacks;
 
 	friend class callback_table;
-	friend class result;
 
 	void setup_callbacks();
 
@@ -225,6 +226,11 @@ public:
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
 
+	template<typename Callable>
+	void create_function(const char *name, Callable f);
+	template<int NArgs, typename Callable>
+	void create_function_n(const char *name, Callable f);
+
 	sqlite3* raw() { return handle; }
 };
 
@@ -233,17 +239,12 @@ class result;
 
 class statement {
 private:
-	connection &c;
 	sqlite3_stmt *handle;
 
-	statement(connection &c, sqlite3_stmt *a_handle);
-
-	friend class connection;
-	friend class column;
-	friend class parameter;
-	friend class result;
-
 public:
+	connection &conn;
+
+	statement(connection &c, sqlite3_stmt *a_handle);
 	~statement();
 
 	const char* sql();
@@ -284,16 +285,16 @@ public:
 
 
 class result {
+public:
+	statement &stmt;
+
 private:
-	statement &s;
 	bool onrow;
 
-	explicit result(statement &a_s) : s(a_s) {
+public:
+	explicit result(statement &a_stmt) : stmt(a_stmt), onrow(false) {
 	};
 
-	friend class statement;
-
-public:
 	class iterator : public std::iterator<std::input_iterator_tag, result> {
 	private:
 		result *r;
@@ -312,8 +313,8 @@ public:
 		bool operator!=(const iterator &other) const { return !(*this == other); }
 	};
 
-	int col_count() const { return s.col_count(); }
-	column col(int idx) { return s.col(idx); }
+	int col_count() const { return stmt.col_count(); }
+	column col(int idx) { return stmt.col(idx); }
 	//const column col(int idx) const { return s.col(idx); }
 
 	bool next();
