@@ -25,6 +25,11 @@ public:
 };
 
 
+
+/** sqlite3_status() */
+std::pair<int, int> status(int op, bool reset=false);
+
+
 // TODO: blob_iterator?
 
 typedef std::pair<const void*, int> blob;
@@ -66,6 +71,7 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 */
 
 class statement;
+class result;
 
 class parameter {
 public:
@@ -74,7 +80,7 @@ public:
 
 	parameter(statement &a_stmt, int a_idx);
 
-	const char* name();
+	const char* name() const;
 
 	void bind(int value);
 	void bind(int64_t value);
@@ -85,6 +91,15 @@ public:
 	template<typename T>
 	void bind(const std::vector<T> &value, bool copy = true) { bind(vector_blob(value), copy); }
 	void bind_zeroblob(int len);
+
+	parameter& operator=(int value) { bind(value); return *this; }
+	parameter& operator=(int64_t value) { bind(value); return *this; }
+	parameter& operator=(double value) { bind(value); return *this; }
+	parameter& operator=(const char *value) { bind(value, true); return *this; }
+	parameter& operator=(const std::string &value) { bind(value, true); return *this; }
+	parameter& operator=(const blob &value) { bind(value, true); return *this; }
+	template<typename T>
+	parameter& operator=(const std::vector<T> &value) { bind(vector_blob(value), true); return *this; }
 };
 
 
@@ -105,9 +120,21 @@ public:
 
 	template<typename T>
 	T val() const;
-};
 
-// TODO: conversion operators instead of val<>()?
+	template<typename T>
+	std::vector<T> vec() const {
+		return blob_vector<T>(val<blob>());
+	}
+
+	operator int() const;
+	operator int64_t() const;
+	operator double() const;
+	operator const char*() const;
+	//operator std::string() const;
+	operator blob() const;
+	template<typename T>
+	operator std::vector<T>() const;
+};
 
 template<> int column::val<int>() const;
 template<> int64_t column::val<int64_t>() const;
@@ -122,6 +149,16 @@ std::vector<T> column::val<std::vector<T>>() const {
 }
 */
 
+inline column::operator int() const { return val<int>(); }
+inline column::operator int64_t() const { return val<int64_t>(); }
+inline column::operator double() const { return val<double>(); }
+inline column::operator const char*() const { return val<const char*>(); }
+//inline column::operator std::string() const { return val<std::string>(); }
+inline column::operator blob() const { return val<blob>(); }
+template<typename T>
+column::operator std::vector<T>() const { return vec<std::vector<T>>(); }
+
+
 struct callback_table;
 
 struct column_metadata {
@@ -131,6 +168,8 @@ struct column_metadata {
 	bool primarykey;
 	bool autoinc;
 };
+
+//class query;
 
 class connection {
 private:
@@ -158,7 +197,7 @@ public:
 	const char* filename(const char *db = "main") const;
 	const char* filename(const std::string &db) const { return filename(db.c_str()); }
 	/** sqlite3_db_readonly() */
-	bool readonly(const char *dbname) const;
+	bool readonly(const char *dbname = "main") const;
 	bool readonly(const std::string &dbname) const { return readonly(dbname.c_str()); }
 	/** sqlite3_db_status() */
 	std::pair<int, int> status(int op, bool reset=false);
@@ -177,7 +216,7 @@ public:
 	/** Create a sql statement */
 	statement prepare(const char *sql);
 	//void exec(const char *sql, const std::function<void ()> &callback);
-	/** Execute sql, discarding any results */
+	/** Execute sql */
 	void exec(const char *sql);
 
 	void interrupt();
@@ -226,16 +265,29 @@ public:
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
 
+	/** Define a SQL function, automatically deduce the number of arguments */
 	template<typename Callable>
 	void create_function(const char *name, Callable f);
+	/** Define a SQL function with the given number of arguments. Use if automatic deduction fails. */
 	template<int NArgs, typename Callable>
 	void create_function_n(const char *name, Callable f);
+	/** Define a SQL function with variable number of arguments. The Callable will be
+	 * called with a single parameter, a std::vector<sqxx::value>.
+	 */
+	template<typename Callable>
+	void create_function_vararg(const char *name, Callable f);
+
+	/*
+	template<typename Aggregator>
+	void create_aggregare(const char *name);
+
+	template<typename AggregatorFactory>
+	void create_aggregare(const char *name, AggregatorFactory f);
+	*/
 
 	sqlite3* raw() { return handle; }
 };
 
-
-class result;
 
 class statement {
 private:
@@ -268,7 +320,6 @@ public:
 	int col_count() const;
 	column col(int idx);
 
-	bool step();
 	void exec();
 	// iterator/range access to all result rows
 	result run();
@@ -283,6 +334,12 @@ public:
 	sqlite3_stmt* raw() { return handle; }
 };
 
+/*
+struct query {
+	statement st;
+	result res;
+};
+*/
 
 class result {
 public:
@@ -294,6 +351,11 @@ private:
 public:
 	explicit result(statement &a_stmt) : stmt(a_stmt), onrow(false) {
 	};
+
+	result(const result&) = default;
+	result& operator=(const result&) = default;
+	result(result&&) = default;
+	result& operator=(result&&) = default;
 
 	class iterator : public std::iterator<std::input_iterator_tag, result> {
 	private:
@@ -326,6 +388,22 @@ public:
 
 	int changes() const;
 };
+
+class query {
+public:
+	connection &conn;
+	statement st;
+	result res;
+
+	query(connection &conn_arg, const char *sql) : conn(conn_arg), st(conn.prepare(sql)), res(st.run()) {
+	}
+
+	query(const query&) = delete;
+	query& operator=(const query&) = delete;
+	query(query&&) = default;
+	query& operator=(query&&) = default;
+};
+
 
 } // namespace sqlitepp
 

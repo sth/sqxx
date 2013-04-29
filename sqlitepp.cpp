@@ -34,6 +34,16 @@ recent_error::recent_error(sqlite3 *handle) : error(sqlite3_errcode(handle), sql
 }
 
 
+std::pair<int, int> status(int op, bool reset) {
+	int rv;
+	int cur, hi;
+	rv = sqlite3_status(op, &cur, &hi, static_cast<int>(reset));
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return std::make_pair(cur, hi);
+}
+
+
 struct collation_data_t {
 	connection &c;
 	connection::collation_handler_t fn;
@@ -232,7 +242,14 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 */
 
 void connection::exec(const char *sql) {
-	prepare(sql).run();
+	// temporary statement that goes out of scope before result is done processing
+	prepare(sql).exec();
+	/*
+	query q;
+	q.st = prepare(sql);
+	q.res = q.st.run();
+	return q;
+	*/
 }
 
 statement connection::prepare(const char *sql) {
@@ -557,6 +574,13 @@ result statement::run() {
 	return r;
 }
 
+// Experimental. Does it make a difference to iterate over all results?
+void statement::exec() {
+	result r(*this);
+	while (r.next())
+		;
+}
+
 void statement::reset() {
 	int rv;
 
@@ -581,7 +605,7 @@ void statement::clear_bindings() {
 parameter::parameter(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
 }
 
-const char* parameter::name() {
+const char* parameter::name() const {
 	const char *n = sqlite3_bind_parameter_name(stmt.raw(), idx);
 	if (!n)
 		throw error(SQLITE_RANGE, "cannot determine parameter name");

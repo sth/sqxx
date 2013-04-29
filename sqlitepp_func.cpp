@@ -53,41 +53,6 @@ value::operator blob() const {
 }
 
 
-
-
-
-/*
-template<typename Ret, typename... Args>
-Ret func_apply_array(Ret (*f)(Args...), void **argv) {
-	return func_apply_array<0, Ret, Args...>::apply(f, argv);
-}
-
-template<typename Ret, typename... Args>
-Ret func_apply_array(const std::function<Ret (Args...)> &fun, void **argv) {
-	return func_apply_array<0, Ret, Args...>::apply(fun, argv);
-}
-
-
-template<int I, typename Ret, typename... PendingArgs>
-struct sqxx_apply_array;
-
-template<int I, typename Ret, typename Arg, typename... PendingArgs>
-struct sqxx_apply_array<I, Ret, Arg, PendingArgs...> {
-	template<typename Fun, typename... AppliedArgs>
-	static Ret apply(Fun f, sqlite_value **argv, AppliedArgs... args) {
-		return sqxx_apply_array<I+1, Ret, PendingArgs...>::template apply<Fun, AppliedArgs..., Arg>(f, argv, args..., value(argv[I]));
-	}
-};
-
-template<int I, typename Ret>
-struct sqxx_apply_array<I, Ret> {
-	template<typename Fun, typename... AppliedArgs>
-	static Ret apply(Fun f, void **argv, AppliedArgs... args) {
-		return f(args...);
-	}
-};
-*/
-
 template<int I, int N>
 struct sqxx_apply_array_n {
 	template<typename Fun, typename... Values>
@@ -105,27 +70,6 @@ struct sqxx_apply_array_n<I, I> {
 };
 
 
-/*
-template<int I, typename Ret, typename... PendingArgs>
-struct sqxx_apply_array;
-
-template<int I, typename Ret, typename Arg, typename... PendingArgs>
-struct sqxx_apply_array<I, Ret, Arg, PendingArgs...> {
-	template<typename Fun, typename... Values>
-	static Ret apply(const Fun &f, sqlite3_value **argv, Values... args) {
-		return sqxx_apply_array<I+1, Ret, PendingArgs...>::template apply<Fun, Values..., value>(f, argv, args..., value(argv[I]));
-	}
-};
-
-template<int I, typename Ret>
-struct sqxx_apply_array<I, Ret> {
-	template<typename Fun, typename... Values>
-	static Ret apply(const Fun &f, void **argv, Values... args) {
-		return f(args...);
-	}
-};
-*/
-
 struct sqxx_fun_data {
 	virtual ~sqxx_fun_data() {
 	}
@@ -135,7 +79,7 @@ struct sqxx_fun_data {
 
 template<int NArgs, typename Callable>
 struct sqxx_fun_data_n : sqxx_fun_data {
-	Callable fun;
+	typename std::remove_reference<Callable>::type fun;
 	static const int nargs = callable_traits<Callable>::argc;
 
 	sqxx_fun_data_n(Callable a_fun) : fun(std::forward(a_fun)) {
@@ -187,13 +131,6 @@ static void create_function_p(sqlite3 *handle, const char *name, int nargs, sqxx
 	}
 }
 
-/*
-template<typename Fun>
-void connection::create_function(const char *name, const std::function<Fun> &f) {
-	static const size_t NArgs = callable_traits<Fun>::argc;
-	create_function_p(handle, name, NArgs, new sqxx_fun_data_n<Fun>(f));
-}
-*/
 
 template<typename Callable>
 void connection::create_function(const char *name, Callable f) {
@@ -206,21 +143,65 @@ void connection::create_function_n(const char *name, Callable f) {
 	create_function_p(handle, name, NArgs, new sqxx_fun_data_n<NArgs, Callable>(std::forward(f)));
 }
 
-/*
-template<typename Fun, int NArgs>
-void create_function(const char *name, const Fun &fun) {
-	scalar_data *data = new scalar_data_n<Fun, NArgs>(fun);
+
+template<typename Callable>
+struct sqxx_fun_data_vararg : sqxx_fun_data {
+	typename std::remove_reference<Callable>::type fun;
+	sqxx_fun_data_vararg(Callable a_fun) : fun(std::forward(a_fun)) {
+	}
+
+	virtual value call(int argc, sqlite3_value **argv) {
+		std::vector<value> args(argv, argv+argc);
+		return fun(args);
+	}
+};
+
+template<typename Callable>
+void connection::create_function_vararg(const char *name, Callable f) {
+	create_function_p(handle, name, -1, new sqxx_fun_data_vararg<Callable>(std::forward(f)));
 }
-*/
 
 /*
-template<typename Fun>
-void create_function(const char *name, const Fun &fun) {
-	create_function<Fun, args_count<Fun>::value>(name, fun);
+struct sqxx_aggr_data {
+};
+
+template<class Aggregator>
+struct sqxx_aggr_data_cls : sqxx_aggr_data {
+private:
+	Aggregator** get(sqlite3_context *ctx) {
+	}
+
+	void init(Aggregator **ptr) {
+		if (*ptr == nullptr)
+			*ptr = new Aggregator();
+	}
+
+public:
+	void step(sqlite3_context *ctx) {
+		Aggregator **ptr = (Aggregator**)sqlite3_user_data(ctx, sizeof(Aggregator*));
+		ensure(ptr);
+		(*ptr)->step();
+	}
+
+	void final(sqlite3_cotext *ctx) {
+		Aggregator **ptr = (Aggregator**)sqlite3_user_data(ctx, 0);
+		Aggregator *data;
+		if (ptr)
+			data = *ptr;
+		ensure(data);
+		data->step();
+		delete data;
+	}
+};
+
+template<typename Aggregator>
+void connection::create_function_vararg(const char *name) {
+	create_function_p(handle, name, -1, new sqxx_fun_data_vararg<Callable>(std::forward(f)));
 }
 
-void create_function_varargs(const char *name, const Fun &fun) {
-	scalar_data *data = new scalar_data_any<Fun>(fun);
+template<typename AggregatorFactory>
+void connection::create_function_vararg(const char *name, AggregatorFactory f) {
+	create_function_p(handle, name, -1, new sqxx_fun_data_vararg<Callable>(std::forward(f)));
 }
 */
 
