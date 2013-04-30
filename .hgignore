@@ -1,0 +1,7 @@
+
+syntax: glob
+*.o
+*.a
+.scons*
+sqxx_test
+*.swp
