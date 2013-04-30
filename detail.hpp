@@ -1,12 +1,12 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(STHCXX_SQLITEPP_DETAIL_HPP_INCLUDED)
-#define STHCXX_SQLITEPP_DETAIL_HPP_INCLUDED
+#if !defined(SQXX_DETAIL_HPP_INCLUDED)
+#define SQXX_DETAIL_HPP_INCLUDED
 
-#include "sqlitepp.hpp"
+#include "sqxx.hpp"
 
-namespace sqlitepp {
+namespace sqxx {
 
 class static_error : public error {
 public:
@@ -26,7 +26,7 @@ public:
 	recent_error(sqlite3 *handle);
 };
 
-} // namespace sqlitepp
+} // namespace sqxx
 
-#endif // STHCXX_SQLITEPP_DETAIL_HPP_INCLUDED
+#endif // SQXX_DETAIL_HPP_INCLUDED
 

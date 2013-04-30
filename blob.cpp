@@ -1,12 +1,12 @@
 
 // (c) 2013 Stephan Hohe
 
-#include "sqlitepp.hpp"
-#include "sqlitepp_blob.hpp"
-#include "sqlitepp_detail.hpp"
+#include "sqxx.hpp"
+#include "blob.hpp"
+#include "detail.hpp"
 #include <sqlite3.h>
 
-namespace sqlitepp {
+namespace sqxx {
 
 blob_source::blob_source(sqlite3_blob *handle_arg)
 	: handle(handle_arg), pos(0), len(sqlite3_blob_bytes(handle)) {
@@ -59,5 +59,5 @@ void blob_source::close() {
 	sqlite3_blob_close(handle);
 }
 
-} // namepace sqlitepp
+} // namepace sqxx
 

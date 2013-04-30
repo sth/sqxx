@@ -1,6 +1,9 @@
 
 // (c) 2013 Stephan Hohe
 
+#if !defined(SQXX_BLOB_INCLUDED_HPP)
+#define SQXX_BLOB_INCLUDED_HPP
+
 #include <iosfwd>
 #include <boost/iostreams/traits.hpp>
 #include <boost/iostreams/categories.hpp>
@@ -8,7 +11,7 @@
 
 struct sqlite3_blob;
 
-namespace sqlitepp {
+namespace sqxx {
 
 class blob_source {
 private:
@@ -35,5 +38,7 @@ public:
 	void close();
 };
 
-} // namespace sqlitepp
+} // namespace sqxx
+
+#endif // SQXX_BLOB_INCLUDED_HPP
 

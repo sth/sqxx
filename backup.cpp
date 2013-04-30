@@ -1,9 +1,9 @@
 
-#include "sqlitepp_backup.hpp"
-#include "sqlitepp_detail.hpp"
+#include "backup.hpp"
+#include "detail.hpp"
 #include <sqlite3.h>
 
-namespace sqlitepp {
+namespace sqxx {
 
 backup::backup(connection &dest, const char *ddb, connection &source, const char *sdb)
 	: handle(sqlite3_backup_init(source.raw(), sdb, dest.raw(), ddb)) {
@@ -36,5 +36,5 @@ int backup::pagecount() {
 	return sqlite3_backup_pagecount(handle);
 }
 
-} // namespace sqlitepp
+} // namespace sqxx
 

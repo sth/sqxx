@@ -1,12 +1,12 @@
 
-#include "sqlitepp.hpp"
-#include "sqlitepp_detail.hpp"
+#include "sqxx.hpp"
+#include "detail.hpp"
 #include <string>
 #include <sqlite3.h>
 #include <functional>
 #include "callable.hpp"
 
-namespace sqlitepp {
+namespace sqxx {
 
 class value {
 private:
@@ -205,5 +205,5 @@ void connection::create_function_vararg(const char *name, AggregatorFactory f) {
 }
 */
 
-} // namepace sqlitepp
+} // namepace sqxx
 

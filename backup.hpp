@@ -1,12 +1,14 @@
 
+// (c) 2013 Stephan Hohe
+
 #if !defined(SQXX_BACKUP_HPP_INCLUDED)
 #define SQXX_BACKUP_HPP_INCLUDED
 
-#include "sqlitepp.hpp"
+#include "sqxx.hpp"
 
 struct sqlite3_backup;
 
-namespace sqlitepp {
+namespace sqxx {
 
 template <typename Stepped>
 class stepping_iterator {
@@ -64,7 +66,7 @@ public:
 	}
 };
 
-} // namesapce sqlitepp
+} // namesapce sqxx
 
 #endif // SQXX_BACKUP_HPP_INCLUDED
 

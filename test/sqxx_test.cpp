@@ -1,9 +1,7 @@
 
-#include "sqlitepp.hpp"
+#include "sqxx.hpp"
 
 #include <boost/test/unit_test.hpp>
-
-namespace sqxx = sqlitepp;
 
 BOOST_AUTO_TEST_SUITE(sqxx_cn)
 

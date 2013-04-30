@@ -1,8 +1,8 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(STHCXX_SQLITEPP_INCLUDED)
-#define STHCXX_SQLITEPP_INCLUDED
+#if !defined(SQXX_INCLUDED)
+#define SQXX_INCLUDED
 
 #include <string>
 #include <stdexcept>
@@ -13,7 +13,7 @@
 struct sqlite3;
 struct sqlite3_stmt;
 
-namespace sqlitepp {
+namespace sqxx {
 
 class error : public std::runtime_error {
 public:
@@ -405,7 +405,7 @@ public:
 };
 
 
-} // namespace sqlitepp
+} // namespace sqxx
 
-#endif // STHCXX_SQLITEPP_INCLUDED
+#endif // SQXX_INCLUDED
 

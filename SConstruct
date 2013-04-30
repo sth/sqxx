@@ -11,10 +11,10 @@ env.BConfigure()
 
 
 src = Split('''
-	sqlitepp.cpp
-	sqlitepp_blob.cpp
-	sqlitepp_backup.cpp
-	sqlitepp_func.cpp
+	sqxx.cpp
+	blob.cpp
+	backup.cpp
+	func.cpp
    ''')
 
 lib = env.Library('sqxx', src)

@@ -1,8 +1,8 @@
 
 // (c) 2013 Stephan Hohe
 
-#include "sqlitepp.hpp"
-#include "sqlitepp_detail.hpp"
+#include "sqxx.hpp"
+#include "detail.hpp"
 #include <sqlite3.h>
 #include <cstring>
 
@@ -10,7 +10,7 @@
 #include <iostream>
 #endif
 
-namespace sqlitepp {
+namespace sqxx {
 
 // ---------------------------------------------------------------------------
 // error
@@ -283,7 +283,7 @@ void connection::setup_callbacks() {
 }
 
 extern "C"
-int sqlitepp_call_commit_handler(void *data) {
+int sqxx_call_commit_handler(void *data) {
 	connection::commit_handler_t *fn = reinterpret_cast<connection::commit_handler_t*>(data);
 	try {
 		return (*fn)();
@@ -296,7 +296,7 @@ int sqlitepp_call_commit_handler(void *data) {
 void connection::set_commit_handler(const commit_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<commit_handler_t> cb(new commit_handler_t(fun));
-		sqlite3_commit_hook(handle, sqlitepp_call_commit_handler, cb.get());
+		sqlite3_commit_hook(handle, sqxx_call_commit_handler, cb.get());
 		setup_callbacks();
 		callbacks->commit_handler = std::move(cb);
 	}
@@ -312,7 +312,7 @@ void connection::set_commit_handler() {
 }
 
 extern "C"
-void sqlitepp_call_rollback_handler(void *data) {
+void sqxx_call_rollback_handler(void *data) {
 	connection::rollback_handler_t *fn = reinterpret_cast<connection::rollback_handler_t*>(data);
 	try {
 		(*fn)();
@@ -324,7 +324,7 @@ void sqlitepp_call_rollback_handler(void *data) {
 void connection::set_rollback_handler(const rollback_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<rollback_handler_t> cb(new rollback_handler_t(fun));
-		sqlite3_rollback_hook(handle, sqlitepp_call_rollback_handler, cb.get());
+		sqlite3_rollback_hook(handle, sqxx_call_rollback_handler, cb.get());
 		setup_callbacks();
 		callbacks->rollback_handler = std::move(cb);
 	}
@@ -341,7 +341,7 @@ void connection::set_rollback_handler() {
 
 
 extern "C"
-void sqlitepp_call_update_handler(void *data, int op, char const *database_name, const char *table_name, sqlite3_int64 rowid) {
+void sqxx_call_update_handler(void *data, int op, char const *database_name, const char *table_name, sqlite3_int64 rowid) {
 	connection::update_handler_t *fn = reinterpret_cast<connection::update_handler_t*>(data);
 	try {
 		(*fn)(op, database_name, table_name, rowid);
@@ -353,7 +353,7 @@ void sqlitepp_call_update_handler(void *data, int op, char const *database_name,
 void connection::set_update_handler(const update_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<update_handler_t> cb(new update_handler_t(fun));
-		sqlite3_update_hook(handle, sqlitepp_call_update_handler, cb.get());
+		sqlite3_update_hook(handle, sqxx_call_update_handler, cb.get());
 		setup_callbacks();
 		callbacks->update_handler = std::move(cb);
 	}
@@ -369,7 +369,7 @@ void connection::set_update_handler() {
 }
 
 extern "C"
-void sqlitepp_call_trace_handler(void *data, const char* sql) {
+void sqxx_call_trace_handler(void *data, const char* sql) {
 	connection::trace_handler_t *fn = reinterpret_cast<connection::trace_handler_t*>(data);
 	try {
 		(*fn)(sql);
@@ -381,7 +381,7 @@ void sqlitepp_call_trace_handler(void *data, const char* sql) {
 void connection::set_trace_handler(const trace_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<trace_handler_t> cb(new trace_handler_t(fun));
-		sqlite3_trace(handle, sqlitepp_call_trace_handler, cb.get());
+		sqlite3_trace(handle, sqxx_call_trace_handler, cb.get());
 		setup_callbacks();
 		callbacks->trace_handler = std::move(cb);
 	}
@@ -397,7 +397,7 @@ void connection::set_trace_handler() {
 }
 
 extern "C"
-void sqlitepp_call_profile_handler(void *data, const char* sql, sqlite_uint64 nsec) {
+void sqxx_call_profile_handler(void *data, const char* sql, sqlite_uint64 nsec) {
 	connection::profile_handler_t *fn = reinterpret_cast<connection::profile_handler_t*>(data);
 	try {
 		(*fn)(sql, static_cast<uint64_t>(nsec));
@@ -409,7 +409,7 @@ void sqlitepp_call_profile_handler(void *data, const char* sql, sqlite_uint64 ns
 void connection::set_profile_handler(const profile_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<profile_handler_t> cb(new profile_handler_t(fun));
-		sqlite3_profile(handle, sqlitepp_call_profile_handler, cb.get());
+		sqlite3_profile(handle, sqxx_call_profile_handler, cb.get());
 		setup_callbacks();
 		callbacks->profile_handler = std::move(cb);
 	}
@@ -425,7 +425,7 @@ void connection::set_profile_handler() {
 }
 
 extern "C"
-int sqlitepp_call_authorize_handler(void *data, int action, const char* d1, const char *d2, const char *d3, const char *d4) {
+int sqxx_call_authorize_handler(void *data, int action, const char* d1, const char *d2, const char *d3, const char *d4) {
 	connection::authorize_handler_t *fn = reinterpret_cast<connection::authorize_handler_t*>(data);
 	try {
 		return (*fn)(action, d1, d2, d3, d4);
@@ -438,7 +438,7 @@ int sqlitepp_call_authorize_handler(void *data, int action, const char* d1, cons
 void connection::set_authorize_handler(const authorize_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<authorize_handler_t> cb(new authorize_handler_t(fun));
-		sqlite3_set_authorizer(handle, sqlitepp_call_authorize_handler, cb.get());
+		sqlite3_set_authorizer(handle, sqxx_call_authorize_handler, cb.get());
 		setup_callbacks();
 		callbacks->authorize_handler = std::move(cb);
 	}
@@ -454,7 +454,7 @@ void connection::set_authorize_handler() {
 }
 
 extern "C"
-int sqlitepp_call_busy_handler(void *data, int count) {
+int sqxx_call_busy_handler(void *data, int count) {
 	connection::busy_handler_t *fn = reinterpret_cast<connection::busy_handler_t*>(data);
 	try {
 		return (*fn)(count);
@@ -467,7 +467,7 @@ int sqlitepp_call_busy_handler(void *data, int count) {
 void connection::set_busy_handler(const busy_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<busy_handler_t> cb(new busy_handler_t(fun));
-		sqlite3_busy_handler(handle, sqlitepp_call_busy_handler, cb.get());
+		sqlite3_busy_handler(handle, sqxx_call_busy_handler, cb.get());
 		setup_callbacks();
 		callbacks->busy_handler = std::move(cb);
 	}
@@ -491,7 +491,7 @@ void connection::busy_timeout(int ms) {
 }
 
 extern "C"
-void sqlitepp_call_collation_handler(void *data, sqlite3 *handle, int textrep, const char *name) {
+void sqxx_call_collation_handler(void *data, sqlite3 *handle, int textrep, const char *name) {
 	collation_data_t *dat = reinterpret_cast<collation_data_t*>(data);
 	//assert(handle == dat->c.handle);
 	try {
@@ -504,7 +504,7 @@ void sqlitepp_call_collation_handler(void *data, sqlite3 *handle, int textrep, c
 void connection::set_collation_handler(const collation_handler_t &fun) {
 	if (fun) {
 		std::unique_ptr<collation_data_t> d(new collation_data_t(*this, fun));
-		sqlite3_collation_needed(handle, d.get(), sqlitepp_call_collation_handler);
+		sqlite3_collation_needed(handle, d.get(), sqxx_call_collation_handler);
 		setup_callbacks();
 		callbacks->collation_data = std::move(d);
 	}
@@ -761,5 +761,5 @@ namespace {
 	lib_setup setup;
 }
 
-} // namespace sqlitepp
+} // namespace sqxx
 
