@@ -213,7 +213,10 @@ public:
 	typedef std::function<int (size_t, const char*, size_t, const char*)> collation_function_t;
 	void create_collation(const char *name, const collation_function_t &coll);
 
-	/** Create a sql statement */
+	/** Create a sql statement
+	 *
+	 * sqlite3_prepare_v2()
+	 */
 	statement prepare(const char *sql);
 
 	/** Execute sql
@@ -226,10 +229,14 @@ public:
 	statement exec(const char *sql);
 	statement exec(const std::string &sql);
 
+	/** sqlite3_interrupt() */
 	void interrupt();
+	/** sqlite3_limit() */
 	int limit(int id, int newValue);
 
+	/** sqlite3_busy_timeout() */
 	void busy_timeout(int ms);
+	/** sqlite3_db_release_memory() */
 	void release_memory();
 
 	/* sqlite3_commit_hook() */
@@ -349,6 +356,7 @@ public:
 
 	// Result row access
 
+	// TODO: The following functions all do the same thing, remove some
 	bool complete() const;
 	bool eof() const { return completed; }
 	operator bool() const { return !completed; }
