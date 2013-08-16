@@ -364,7 +364,6 @@ public:
 	class row_iterator : public std::iterator<std::input_iterator_tag, statement> {
 	private:
 		statement *s;
-		size_t pos;
 
 	public:
 		explicit row_iterator(statement *a_s = nullptr);
@@ -379,7 +378,7 @@ public:
 		// Not reasonably implementable with correct return:
 		void operator++(int) { ++*this; }
 
-		bool operator==(const row_iterator &other) const { return (pos == other.pos); }
+		bool operator==(const row_iterator &other) const { return (s == other.s); }
 		bool operator!=(const row_iterator &other) const { return !(*this == other); }
 	};
 

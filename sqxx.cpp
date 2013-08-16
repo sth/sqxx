@@ -770,15 +770,13 @@ blob column::val<blob>() const {
 }
 
 
-statement::row_iterator::row_iterator(statement *s_arg) : s(s_arg), pos((size_t)-1) {
+statement::row_iterator::row_iterator(statement *s_arg) : s(s_arg) {
 	check_complete();
 }
 
 void statement::row_iterator::check_complete() {
-	if (s && !s->completed)
-		++pos;
-	else
-		pos = (size_t)(-1);
+	if (s && s->completed)
+		s = nullptr;
 }
 
 statement::row_iterator& statement::row_iterator::operator++() {
