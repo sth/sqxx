@@ -8,10 +8,6 @@
 #include <iostream>
 
 
-#if (SQLITE_VERSION_NUMBER < 3007014)
-#include <iostream>
-#endif
-
 namespace sqxx {
 
 // ---------------------------------------------------------------------------
