@@ -72,6 +72,11 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 
 class statement;
 
+/**
+ * Represents a parameter of a prepared statement
+ *
+ * Supports binding of values to that parameter.
+ */
 class parameter {
 public:
 	statement &stmt;
@@ -102,6 +107,7 @@ public:
 };
 
 
+/** A column of a sql query result */
 class column {
 public:
 	statement &stmt;
@@ -162,6 +168,7 @@ namespace detail {
 	struct callback_table;
 }
 
+/** Metadata for a table column */
 struct column_metadata {
 	const char *datatype;
 	const char *collseq;
@@ -172,6 +179,7 @@ struct column_metadata {
 
 //class query;
 
+/** A database connection */
 class connection {
 private:
 	sqlite3 *handle;
@@ -293,6 +301,7 @@ public:
 	void create_function_vararg(const char *name, Callable f);
 
 	/*
+	// TODO
 	template<typename Aggregator>
 	void create_aggregare(const char *name);
 
@@ -300,10 +309,19 @@ public:
 	void create_aggregare(const char *name, AggregatorFactory f);
 	*/
 
+	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }
 };
 
 
+/**
+ * A sql statement
+ *
+ * Includes:
+ *
+ * - Binding of parameters for prepared statements
+ * - Accessing of result rows after executing the statement
+ */
 class statement {
 private:
 	sqlite3_stmt *handle;
@@ -388,7 +406,7 @@ public:
 
 	int changes() const;
 
-
+	/** Raw access to the underlying `sqlite3_stmt*` handle */
 	sqlite3_stmt* raw() { return handle; }
 };
 
