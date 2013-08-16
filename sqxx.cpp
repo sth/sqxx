@@ -244,15 +244,14 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 }
 */
 
-void connection::exec(const char *sql) {
-	prepare(sql).exec();
-	/*
-	// temporary statement that goes out of scope before result is done processing
-	query q;
-	q.st = prepare(sql);
-	q.res = q.st.run();
-	return q;
-	*/
+statement connection::exec(const char *sql) {
+	statement st = prepare(sql);
+	st.run();
+	return st;
+}
+
+statement connection::exec(const std::string &sql) {
+	return exec(sql.c_str());
 }
 
 statement connection::prepare(const char *sql) {
@@ -631,11 +630,12 @@ void statement::step() {
 }
 
 void statement::run() {
+	// TODO: Check that statement was not yet run(), maybe reset() if it was
 	step();
 }
 
-// Experimental. Does it make a difference to iterate over all results?
-void statement::exec() {
+void statement::next_row() {
+	// TODO: Add check that stmt was run()
 	step();
 }
 

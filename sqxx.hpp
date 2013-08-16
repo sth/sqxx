@@ -216,10 +216,15 @@ public:
 	/** Create a sql statement */
 	statement prepare(const char *sql);
 
-	//void exec(const char *sql, const std::function<void ()> &callback);
-	/** Execute sql */
-	void exec(const char *sql);
-	void exec(const std::string &sql) { exec(sql.c_str()); };
+	/** Execute sql
+	 *
+	 * Like sqlite3_exec(), but returns a `statement` in case you are interested
+	 * in the results returned by the query.
+	 *
+	 * If you are not interested in it, just ignore the return value.
+	 */
+	statement exec(const char *sql);
+	statement exec(const std::string &sql);
 
 	void interrupt();
 	int limit(int id, int newValue);
@@ -300,7 +305,6 @@ public:
 
 protected:
 	bool completed;
-	void step();
 
 public:
 	statement(connection &c, sqlite3_stmt *a_handle);
@@ -327,10 +331,14 @@ public:
 	int col_count() const;
 	column col(int idx);
 
-	// TODO: remove run() or exec()
-	void exec();
+	// Statement execution
+	/** sqlite3_step() */
+	void step();
+
+	/** Execute a statement */
 	void run();
-	void next() { step(); }
+	/** Advance to next result row */
+	void next_row();
 
 	//column col(const char *name);
 

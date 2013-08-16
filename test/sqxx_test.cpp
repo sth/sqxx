@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(statement_result_next) {
 	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
 	st.run();
 	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 11);
-	st.next();
+	st.next_row();
 	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 22);
 }
 
