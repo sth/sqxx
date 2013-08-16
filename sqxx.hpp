@@ -106,9 +106,9 @@ public:
 class column {
 public:
 	statement &stmt;
-	int idx;
+	const int idx;
 
-	column(statement &s, int idx);
+	column(statement &a_stmt, int a_idx);
 
 	const char* name() const;
 	const char* database_name() const;
@@ -419,6 +419,12 @@ public:
 	query& operator=(query&&) = default;
 };
 
+// Handle exceptions thrown from C++ callbacks
+typedef std::function<void (const char*, std::exception_ptr)> callback_exception_handler_t;
+void set_callback_exception_handler(const callback_exception_handler_t &handler);
+
+// Write exeptions to std::cerr
+void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept;
 
 } // namespace sqxx
 

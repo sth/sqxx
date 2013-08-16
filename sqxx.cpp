@@ -5,6 +5,8 @@
 #include "detail.hpp"
 #include <sqlite3.h>
 #include <cstring>
+#include <iostream>
+
 
 #if (SQLITE_VERSION_NUMBER < 3007014)
 #include <iostream>
@@ -282,6 +284,42 @@ void connection::setup_callbacks() {
 		callbacks.reset(new callback_table);
 }
 
+void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept {
+	std::cerr << "SQXX: uncaught exeption in " << cbname << ": ";
+	if (!ex) {
+		std::cerr << "(exception not captured)";
+	}
+	else {
+		try {
+			std::rethrow_exception(ex);
+		}
+		catch (const std::exception &rex) {
+			const char *what = rex.what();
+			if (what)
+				std::cerr << what;
+			else
+				std::cerr << "(no message)";
+		}
+		catch (...) {
+			std::cerr << "(unknown exception type)";
+		}
+	}
+	std::cerr << std::endl;
+}
+
+static callback_exception_handler_t callback_exception_handler = default_callback_exception_handler;
+
+void handle_callback_exception(const char *cbname) {
+	if (callback_exception_handler) {
+		try {
+			callback_exception_handler(cbname, std::current_exception());
+		}
+		catch (...) {
+			default_callback_exception_handler("callback exception handler", std::current_exception());
+		}
+	}
+}
+
 extern "C"
 int sqxx_call_commit_handler(void *data) {
 	connection::commit_handler_t *fn = reinterpret_cast<connection::commit_handler_t*>(data);
@@ -289,6 +327,7 @@ int sqxx_call_commit_handler(void *data) {
 		return (*fn)();
 	}
 	catch (...) {
+		handle_callback_exception("commit handler");
 		return 1;
 	}
 }
@@ -318,6 +357,7 @@ void sqxx_call_rollback_handler(void *data) {
 		(*fn)();
 	}
 	catch (...) {
+		handle_callback_exception("rollback handler");
 	}
 }
 
@@ -347,6 +387,7 @@ void sqxx_call_update_handler(void *data, int op, char const *database_name, con
 		(*fn)(op, database_name, table_name, rowid);
 	}
 	catch (...) {
+		handle_callback_exception("update handler");
 	}
 }
 
@@ -375,6 +416,7 @@ void sqxx_call_trace_handler(void *data, const char* sql) {
 		(*fn)(sql);
 	}
 	catch (...) {
+		handle_callback_exception("trace handler");
 	}
 }
 
@@ -403,6 +445,7 @@ void sqxx_call_profile_handler(void *data, const char* sql, sqlite_uint64 nsec) 
 		(*fn)(sql, static_cast<uint64_t>(nsec));
 	}
 	catch (...) {
+		handle_callback_exception("profile handler");
 	}
 }
 
@@ -431,6 +474,7 @@ int sqxx_call_authorize_handler(void *data, int action, const char* d1, const ch
 		return (*fn)(action, d1, d2, d3, d4);
 	}
 	catch (...) {
+		handle_callback_exception("authorize handler");
 		return SQLITE_IGNORE;
 	}
 }
@@ -460,6 +504,7 @@ int sqxx_call_busy_handler(void *data, int count) {
 		return (*fn)(count);
 	}
 	catch (...) {
+		handle_callback_exception("busy handler");
 		return 0;
 	}
 }
@@ -498,6 +543,7 @@ void sqxx_call_collation_handler(void *data, sqlite3 *handle, int textrep, const
 		(dat->fn)(dat->c, name);
 	}
 	catch (...) {
+		handle_callback_exception("collation handler");
 	}
 }
 
