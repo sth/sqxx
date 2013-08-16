@@ -210,7 +210,8 @@ public:
 	void close() noexcept;
 	void close_sync();
 
-	void create_collation(const char *name, const std::function<int (size_t, const char*, size_t, const char*)> &coll);
+	typedef std::function<int (size_t, const char*, size_t, const char*)> collation_function_t;
+	void create_collation(const char *name, const collation_function_t &coll);
 
 	/** Create a sql statement */
 	statement prepare(const char *sql);

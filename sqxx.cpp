@@ -163,10 +163,9 @@ void connection::close() noexcept {
  * 
  * Strings passed to collation callback functions are not null-terminated.
  */
-typedef std::function<int (size_t, const char *, size_t, const char *)> collate_stdfun;
-
 int call_collation_compare(void *data, int llen, const void *lstr, int rlen, const void *rstr) {
-	collate_stdfun *fun = reinterpret_cast<collate_stdfun*>(data);
+	typedef connection::collation_function_t cf_t;
+	cf_t *fun = reinterpret_cast<cf_t*>(data);
 	try {
 		return (*fun)(
 				static_cast<size_t>(llen), reinterpret_cast<const char*>(lstr),
@@ -179,14 +178,16 @@ int call_collation_compare(void *data, int llen, const void *lstr, int rlen, con
 }
 
 void call_collation_destroy(void *data) {
-	collate_stdfun *fun = reinterpret_cast<collate_stdfun*>(data);
+	typedef connection::collation_function_t cf_t;
+	cf_t *fun = reinterpret_cast<cf_t*>(data);
 	delete fun;
 }
 
-void connection::create_collation(const char *name, const collate_stdfun &coll) {
+void connection::create_collation(const char *name, const connection::collation_function_t &coll) {
+	typedef connection::collation_function_t cf_t;
 	int rv;
 	if (coll) {
-		collate_stdfun *data = new collate_stdfun(coll);
+		cf_t *data = new cf_t(coll);
 		rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, call_collation_compare, call_collation_destroy);
 		if (rv != SQLITE_OK) {
 			delete data;
