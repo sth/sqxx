@@ -242,9 +242,9 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 */
 
 void connection::exec(const char *sql) {
-	// temporary statement that goes out of scope before result is done processing
 	prepare(sql).exec();
 	/*
+	// temporary statement that goes out of scope before result is done processing
 	query q;
 	q.st = prepare(sql);
 	q.res = q.st.run();
@@ -523,7 +523,8 @@ void connection::set_collation_handler() {
 // ---------------------------------------------------------------------------
 // statement
 
-statement::statement(connection &conn_arg, sqlite3_stmt *handle_arg) : handle(handle_arg), conn(conn_arg) {
+statement::statement(connection &conn_arg, sqlite3_stmt *handle_arg)
+		: handle(handle_arg), conn(conn_arg), completed(true) {
 }
 
 statement::~statement() {
@@ -567,18 +568,29 @@ column statement::col(int idx) {
 	return column(*this, idx);
 }
 
+void statement::step() {
+	int rv;
+
+	rv = sqlite3_step(handle);
+	if (rv == SQLITE_ROW) {
+		completed = false;
+	}
+	else if (rv == SQLITE_DONE) {
+		completed = true;
+	}
+	else {
+		throw static_error(rv);
+	}
+}
+
 result statement::run() {
-	result r(*this);
-	// Run query and go to first result row
-	r.next();
-	return r;
+	step();
+	return result(*this);
 }
 
 // Experimental. Does it make a difference to iterate over all results?
 void statement::exec() {
-	result r(*this);
-	while (r.next())
-		;
+	step();
 }
 
 void statement::reset() {
@@ -713,34 +725,28 @@ blob column::val<blob>() const {
 
 
 result::iterator::iterator(result *a_r) : r(a_r), pos((size_t)-1) {
-	if (a_r) {
-		// advance to first result element
-		++(*this);
-	}
+	check_complete();
+}
+
+void result::iterator::check_complete() {
+	if (r && !r->complete())
+		++pos;
+	else
+		pos = (size_t)(-1);
 }
 
 result::iterator& result::iterator::operator++() {
-	if (r->next())
-		++pos;
-	else
-		pos = (size_t)-1;
+	r->next();
+	check_complete();
 	return *this;
 }
 
-bool result::next() {
-	int rv;
+void result::next() {
+	stmt.step();
+}
 
-	rv = sqlite3_step(stmt.raw());
-	if (rv == SQLITE_ROW) {
-		onrow = true;
-	}
-	else if (rv == SQLITE_DONE) {
-		onrow = false;
-	}
-	else {
-		throw static_error(rv);
-	}
-	return onrow;
+bool result::complete() const {
+	return stmt.completed;
 }
 
 int result::changes() const {

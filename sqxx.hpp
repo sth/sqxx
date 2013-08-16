@@ -215,9 +215,11 @@ public:
 
 	/** Create a sql statement */
 	statement prepare(const char *sql);
+
 	//void exec(const char *sql, const std::function<void ()> &callback);
 	/** Execute sql */
 	void exec(const char *sql);
+	void exec(const std::string &sql) { exec(sql.c_str()); };
 
 	void interrupt();
 	int limit(int id, int newValue);
@@ -296,6 +298,12 @@ private:
 public:
 	connection &conn;
 
+protected:
+	friend class result;
+	bool completed;
+	void step();
+
+public:
 	statement(connection &c, sqlite3_stmt *a_handle);
 	~statement();
 
@@ -349,7 +357,7 @@ private:
 	bool onrow;
 
 public:
-	explicit result(statement &a_stmt) : stmt(a_stmt), onrow(false) {
+	explicit result(statement &a_stmt) : stmt(a_stmt) {
 	};
 
 	result(const result&) = default;
@@ -365,11 +373,15 @@ public:
 	public:
 		explicit iterator(result *a_r = nullptr);
 
+	private:
+		void check_complete();
+
+	public:
 		result& operator*() const { return *r; }
 
 		iterator& operator++();
-		// Not reasonable implementable:
-		//operator++(int);
+		// Not reasonably implementable with correct return:
+		void operator++(int) { ++*this; }
 
 		bool operator==(const iterator &other) const { return (pos == other.pos); }
 		bool operator!=(const iterator &other) const { return !(*this == other); }
@@ -379,8 +391,10 @@ public:
 	column col(int idx) { return stmt.col(idx); }
 	//const column col(int idx) const { return s.col(idx); }
 
-	bool next();
-	operator bool() const { return onrow; }
+	void next();
+	bool complete() const;
+	bool eof() const { return complete(); }
+	operator bool() const { return !complete(); }
 
 	iterator begin() { return iterator(this); }
 
@@ -395,7 +409,8 @@ public:
 	statement st;
 	result res;
 
-	query(connection &conn_arg, const char *sql) : conn(conn_arg), st(conn.prepare(sql)), res(st.run()) {
+	query(connection &conn_arg, const char *sql)
+			: conn(conn_arg), st(conn.prepare(sql)), res(st.run()) {
 	}
 
 	query(const query&) = delete;
