@@ -50,6 +50,8 @@ struct collation_data_t {
 	}
 };
 
+namespace detail {
+
 class callback_table {
 public:
 	std::unique_ptr<connection::commit_handler_t> commit_handler;
@@ -61,6 +63,8 @@ public:
 	std::unique_ptr<connection::busy_handler_t> busy_handler;
 	std::unique_ptr<collation_data_t> collation_data;
 };
+
+} // namespace detail
 
 
 // ---------------------------------------------------------------------------
@@ -277,7 +281,7 @@ void connection::release_memory() {
 
 void connection::setup_callbacks() {
 	if (!callbacks)
-		callbacks.reset(new callback_table);
+		callbacks.reset(new detail::callback_table);
 }
 
 void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept {

@@ -158,7 +158,9 @@ template<typename T>
 column::operator std::vector<T>() const { return vec<std::vector<T>>(); }
 
 
-struct callback_table;
+namespace detail {
+	struct callback_table;
+}
 
 struct column_metadata {
 	const char *datatype;
@@ -174,9 +176,8 @@ class connection {
 private:
 	sqlite3 *handle;
 
-	std::unique_ptr<callback_table> callbacks;
-
-	friend class callback_table;
+	friend class detail::callback_table;
+	std::unique_ptr<detail::callback_table> callbacks;
 
 	void setup_callbacks();
 
