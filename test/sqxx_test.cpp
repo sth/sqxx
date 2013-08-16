@@ -13,10 +13,10 @@ struct db {
 
 struct tab : db {
 	tab() : db() {
-		conn.exec("create table tst (a integer, b integer)");
-		conn.exec("insert into tst (a, b) values (1, 11), (2, 22)");
-		conn.exec("create table types (i, l, d, s, b, n)");
-		conn.exec("insert into types (i, l, d, s, b, n) values (1, 1000000000000, 1.5, 'abc', 'bin', NULL)");
+		conn.exec("create table items (id integer, v integer)");
+		conn.exec("insert into items (id, v) values (1, 11), (2, 22), (3, 33)");
+		conn.exec("create table types (id, i, l, d, s, b, n)");
+		conn.exec("insert into types (id, i, l, d, s, b, n) values (1, 2, 3000000000000, 4.5, 'abc', 'bin', NULL)");
 	}
 };
 
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(table) {
 
 BOOST_AUTO_TEST_CASE(result) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from tst where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
 	sqxx::result r = st.run();
 	BOOST_CHECK(r);
 	BOOST_CHECK_EQUAL(r.col_count(), 1);
@@ -43,20 +43,20 @@ BOOST_AUTO_TEST_CASE(result) {
 
 BOOST_AUTO_TEST_CASE(column_val) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from types where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
 	sqxx::result r = st.run();
-	BOOST_CHECK_EQUAL(r.col(0).val<int>(), 1);
-	BOOST_CHECK_EQUAL(r.col(1).val<int64_t>(), 1000000000000L);
-	BOOST_CHECK_EQUAL(r.col(2).val<double>(), 2.5);
-	BOOST_CHECK_EQUAL(r.col(3).val<const char*>(), "abc");
-	BOOST_CHECK_EQUAL(r.col(3).val<std::string>(), "abc");
+	BOOST_CHECK_EQUAL(r.col(1).val<int>(), 2);
+	BOOST_CHECK_EQUAL(r.col(2).val<int64_t>(), 3000000000000L);
+	BOOST_CHECK_EQUAL(r.col(3).val<double>(), 4.5);
+	BOOST_CHECK_EQUAL(r.col(4).val<const char*>(), "abc");
+	BOOST_CHECK_EQUAL(r.col(4).val<std::string>(), "abc");
 	// TODO:
-	//BOOST_CHECK(r.col(5).isnull());
+	//BOOST_CHECK(r.col(6).isnull());
 }
 
 BOOST_AUTO_TEST_CASE(column_cast) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from tst where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
 	sqxx::result r = st.run();
 	BOOST_CHECK_EQUAL(static_cast<int>(r.col(0)), 11);
 	BOOST_CHECK_EQUAL(static_cast<int64_t>(r.col(0)), 11);
@@ -67,21 +67,24 @@ BOOST_AUTO_TEST_CASE(column_cast) {
 
 BOOST_AUTO_TEST_CASE(column_conversion) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select * types where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
 	sqxx::result r = st.run();
-	int v1 = r.col(0);
-	BOOST_CHECK_EQUAL(v1, 11);
-	int64_t v2 = r.col(0);
-	BOOST_CHECK_EQUAL(v2, 11);
-	//BOOST_CHECK_EQUAL(static_cast<double>(r.col(0)), 11.0);
-	//BOOST_CHECK_EQUAL(static_cast<const char*>(r.col(0)), "11");
-	//BOOST_CHECK_EQUAL(static_cast<std::string>(r.col(0)), "11");
+	int v1 = r.col(1);
+	BOOST_CHECK_EQUAL(v1, 2);
+	int64_t v2 = r.col(1);
+	BOOST_CHECK_EQUAL(v2, 2);
+	double v3 = r.col(1);
+	BOOST_CHECK_EQUAL(v3, 2.0);
+	const char *v4 = r.col(1);
+	BOOST_CHECK_EQUAL(v4, "2");
+	std::string v5 = static_cast<std::string>(r.col(1));
+	BOOST_CHECK_EQUAL(v5, "2");
 }
 
 /*
 BOOST_AUTO_TEST_CASE(statement_result_conversion) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from tst where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select b from items where a = 1");
 	sqxx::result r = st.run();
 	BOOST_CHECK_EQUAL(r.col(0), 11);
 	BOOST_CHECK_EQUAL(r.col(0), "11");
@@ -89,16 +92,27 @@ BOOST_AUTO_TEST_CASE(statement_result_conversion) {
 }
 */
 
+BOOST_AUTO_TEST_CASE(statement_result_next) {
+	tab ctx;
+	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
+	auto r = st.run();
+	BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11);
+	r.next();
+	BOOST_CHECK_EQUAL(r.col(0).val<int>(), 22);
+}
+
 BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from tst order by a");
+	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
 	int i = 0;
-	for (auto r : st.run()) {
+	auto res = st.run();
+	for (auto r : res) {
 		++i;
 		BOOST_CHECK(r);
 		BOOST_CHECK_EQUAL(r.col_count(), 1);
 		BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11*i);
 	}
+	BOOST_CHECK_EQUAL(i, 3);
 }
 
 BOOST_AUTO_TEST_CASE(commit_handler) {
@@ -106,9 +120,83 @@ BOOST_AUTO_TEST_CASE(commit_handler) {
 	bool called = false;
 	ctx.conn.set_commit_handler([&]() { called = true; return 0; });
 	ctx.conn.exec("begin transaction");
-	ctx.conn.exec("select b from tst where a = 1");
+	ctx.conn.exec("update items set v = 111 where id = 1");
 	ctx.conn.exec("commit transaction");
 	BOOST_CHECK(called);
+}
+
+BOOST_AUTO_TEST_CASE(rollback_handler) {
+	tab ctx;
+	bool called = false;
+	ctx.conn.set_rollback_handler([&]() { called = true; });
+	ctx.conn.exec("begin transaction");
+	ctx.conn.exec("update items set v = 111 where id = 1");
+	ctx.conn.exec("rollback transaction");
+	BOOST_CHECK(called);
+}
+
+BOOST_AUTO_TEST_CASE(update_handler) {
+	tab ctx;
+	bool called = false;
+	ctx.conn.set_update_handler([&](int op, const char *dbname, const char *tabname, int64_t rowid) {
+		called = true;
+		//BOOST_CHECK_EQUAL(op, SQLITE_UPDATE);
+		BOOST_CHECK_EQUAL(dbname, "main");
+		BOOST_CHECK_EQUAL(tabname, "items");
+		BOOST_CHECK_EQUAL(rowid, 1);
+	});
+	ctx.conn.exec("update items set v = 111 where id = 1");
+	BOOST_CHECK(called);
+}
+
+BOOST_AUTO_TEST_CASE(trace_handler) {
+	tab ctx;
+	bool called = false;
+	std::string sql = "update items set v = 111 where id = 1";
+	ctx.conn.set_trace_handler([&](const char *q) {
+		called = true;
+		BOOST_CHECK_EQUAL(q, sql);
+	});
+	ctx.conn.exec(sql);
+	BOOST_CHECK(called);
+}
+
+BOOST_AUTO_TEST_CASE(profile_handler) {
+	tab ctx;
+	bool called = false;
+	std::string sql = "update items set v = 111 where id = 1";
+	ctx.conn.set_profile_handler([&](const char *q, uint64_t usec) {
+		called = true;
+		BOOST_CHECK_EQUAL(q, sql);
+	});
+	ctx.conn.exec(sql);
+	BOOST_CHECK(called);
+}
+
+BOOST_AUTO_TEST_CASE(authorize_handler) {
+	tab ctx;
+	bool called = false;
+	ctx.conn.set_authorize_handler([&](int action, const char *d1, const char *d2, const char *d3, const char *d4) -> int {
+		called = true;
+		// TODO
+		//std::cout << "params: " << d1 << "/" << d2 << "/" << d3 << "/" << d4 << std::endl;
+		/*
+		if (action == SQLITE_READ && d1 == "main" && d2 == "item" && d3 == ) {
+			return SQLITE_IGNORE;
+		}
+		else {
+			return SQLITE_OK;
+		}
+		*/
+		return 0;
+	});
+
+	auto st = ctx.conn.prepare("select id, v from items where id = 1");
+	BOOST_CHECK(called);
+	auto res = st.run();
+	BOOST_CHECK(!res.eof());
+	BOOST_CHECK_EQUAL(res.col(0).val<int>(), 1);
+	//BOOST_CHECK_EQUAL(static_cast<const void*>(res.col(1).val<const char*>()), static_cast<const void*>(nullptr));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
