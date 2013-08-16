@@ -71,7 +71,6 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 */
 
 class statement;
-class result;
 
 class parameter {
 public:
@@ -299,7 +298,6 @@ public:
 	connection &conn;
 
 protected:
-	friend class result;
 	bool completed;
 	void step();
 
@@ -328,9 +326,10 @@ public:
 	int col_count() const;
 	column col(int idx);
 
+	// TODO: remove run() or exec()
 	void exec();
-	// iterator/range access to all result rows
-	result run();
+	void run();
+	void next() { step(); }
 
 	//column col(const char *name);
 
@@ -339,85 +338,43 @@ public:
 	void reset();
 	void clear_bindings();
 
-	sqlite3_stmt* raw() { return handle; }
-};
+	// Result row access
 
-/*
-struct query {
-	statement st;
-	result res;
-};
-*/
+	bool complete() const;
+	bool eof() const { return completed; }
+	operator bool() const { return !completed; }
 
-class result {
-public:
-	statement &stmt;
-
-private:
-	bool onrow;
-
-public:
-	explicit result(statement &a_stmt) : stmt(a_stmt) {
-	};
-
-	result(const result&) = default;
-	result& operator=(const result&) = default;
-	result(result&&) = default;
-	result& operator=(result&&) = default;
-
-	class iterator : public std::iterator<std::input_iterator_tag, result> {
+	class row_iterator : public std::iterator<std::input_iterator_tag, statement> {
 	private:
-		result *r;
+		statement *s;
 		size_t pos;
 
 	public:
-		explicit iterator(result *a_r = nullptr);
+		explicit row_iterator(statement *a_s = nullptr);
 
 	private:
 		void check_complete();
 
 	public:
-		result& operator*() const { return *r; }
+		statement& operator*() const { return *s; }
 
-		iterator& operator++();
+		row_iterator& operator++();
 		// Not reasonably implementable with correct return:
 		void operator++(int) { ++*this; }
 
-		bool operator==(const iterator &other) const { return (pos == other.pos); }
-		bool operator!=(const iterator &other) const { return !(*this == other); }
+		bool operator==(const row_iterator &other) const { return (pos == other.pos); }
+		bool operator!=(const row_iterator &other) const { return !(*this == other); }
 	};
 
-	int col_count() const { return stmt.col_count(); }
-	column col(int idx) { return stmt.col(idx); }
-	//const column col(int idx) const { return s.col(idx); }
-
-	void next();
-	bool complete() const;
-	bool eof() const { return complete(); }
-	operator bool() const { return !complete(); }
-
-	iterator begin() { return iterator(this); }
-
-	iterator end() { return iterator(); }
+	row_iterator begin() { return row_iterator(this); }
+	row_iterator end() { return row_iterator(); }
 
 	int changes() const;
+
+
+	sqlite3_stmt* raw() { return handle; }
 };
 
-class query {
-public:
-	connection &conn;
-	statement st;
-	result res;
-
-	query(connection &conn_arg, const char *sql)
-			: conn(conn_arg), st(conn.prepare(sql)), res(st.run()) {
-	}
-
-	query(const query&) = delete;
-	query& operator=(const query&) = delete;
-	query(query&&) = default;
-	query& operator=(query&&) = default;
-};
 
 // Handle exceptions thrown from C++ callbacks
 typedef std::function<void (const char*, std::exception_ptr)> callback_exception_handler_t;

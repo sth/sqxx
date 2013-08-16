@@ -629,9 +629,8 @@ void statement::step() {
 	}
 }
 
-result statement::run() {
+void statement::run() {
 	step();
-	return result(*this);
 }
 
 // Experimental. Does it make a difference to iterate over all results?
@@ -770,33 +769,25 @@ blob column::val<blob>() const {
 }
 
 
-result::iterator::iterator(result *a_r) : r(a_r), pos((size_t)-1) {
+statement::row_iterator::row_iterator(statement *s_arg) : s(s_arg), pos((size_t)-1) {
 	check_complete();
 }
 
-void result::iterator::check_complete() {
-	if (r && !r->complete())
+void statement::row_iterator::check_complete() {
+	if (s && !s->completed)
 		++pos;
 	else
 		pos = (size_t)(-1);
 }
 
-result::iterator& result::iterator::operator++() {
-	r->next();
+statement::row_iterator& statement::row_iterator::operator++() {
+	s->step();
 	check_complete();
 	return *this;
 }
 
-void result::next() {
-	stmt.step();
-}
-
-bool result::complete() const {
-	return stmt.completed;
-}
-
-int result::changes() const {
-	return sqlite3_changes(stmt.conn.raw());
+int statement::changes() const {
+	return sqlite3_changes(conn.raw());
 }
 
 

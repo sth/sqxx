@@ -36,20 +36,20 @@ BOOST_AUTO_TEST_CASE(table) {
 BOOST_AUTO_TEST_CASE(result) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
-	sqxx::result r = st.run();
-	BOOST_CHECK(r);
-	BOOST_CHECK_EQUAL(r.col_count(), 1);
+	st.run();
+	BOOST_CHECK(!st.eof());
+	BOOST_CHECK_EQUAL(st.col_count(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(column_val) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
-	sqxx::result r = st.run();
-	BOOST_CHECK_EQUAL(r.col(1).val<int>(), 2);
-	BOOST_CHECK_EQUAL(r.col(2).val<int64_t>(), 3000000000000L);
-	BOOST_CHECK_EQUAL(r.col(3).val<double>(), 4.5);
-	BOOST_CHECK_EQUAL(r.col(4).val<const char*>(), "abc");
-	BOOST_CHECK_EQUAL(r.col(4).val<std::string>(), "abc");
+	st.run();
+	BOOST_CHECK_EQUAL(st.col(1).val<int>(), 2);
+	BOOST_CHECK_EQUAL(st.col(2).val<int64_t>(), 3000000000000L);
+	BOOST_CHECK_EQUAL(st.col(3).val<double>(), 4.5);
+	BOOST_CHECK_EQUAL(st.col(4).val<const char*>(), "abc");
+	BOOST_CHECK_EQUAL(st.col(4).val<std::string>(), "abc");
 	// TODO:
 	//BOOST_CHECK(r.col(6).isnull());
 }
@@ -57,27 +57,27 @@ BOOST_AUTO_TEST_CASE(column_val) {
 BOOST_AUTO_TEST_CASE(column_cast) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
-	sqxx::result r = st.run();
-	BOOST_CHECK_EQUAL(static_cast<int>(r.col(0)), 11);
-	BOOST_CHECK_EQUAL(static_cast<int64_t>(r.col(0)), 11);
-	BOOST_CHECK_EQUAL(static_cast<double>(r.col(0)), 11.0);
-	BOOST_CHECK_EQUAL(static_cast<const char*>(r.col(0)), "11");
-	BOOST_CHECK_EQUAL(static_cast<std::string>(r.col(0)), "11");
+	st.run();
+	BOOST_CHECK_EQUAL(static_cast<int>(st.col(0)), 11);
+	BOOST_CHECK_EQUAL(static_cast<int64_t>(st.col(0)), 11);
+	BOOST_CHECK_EQUAL(static_cast<double>(st.col(0)), 11.0);
+	BOOST_CHECK_EQUAL(static_cast<const char*>(st.col(0)), "11");
+	BOOST_CHECK_EQUAL(static_cast<std::string>(st.col(0)), "11");
 }
 
 BOOST_AUTO_TEST_CASE(column_conversion) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
-	sqxx::result r = st.run();
-	int v1 = r.col(1);
+	st.run();
+	int v1 = st.col(1);
 	BOOST_CHECK_EQUAL(v1, 2);
-	int64_t v2 = r.col(1);
+	int64_t v2 = st.col(1);
 	BOOST_CHECK_EQUAL(v2, 2);
-	double v3 = r.col(1);
+	double v3 = st.col(1);
 	BOOST_CHECK_EQUAL(v3, 2.0);
-	const char *v4 = r.col(1);
+	const char *v4 = st.col(1);
 	BOOST_CHECK_EQUAL(v4, "2");
-	std::string v5 = static_cast<std::string>(r.col(1));
+	std::string v5 = static_cast<std::string>(st.col(1));
 	BOOST_CHECK_EQUAL(v5, "2");
 }
 
@@ -85,28 +85,28 @@ BOOST_AUTO_TEST_CASE(column_conversion) {
 BOOST_AUTO_TEST_CASE(statement_result_conversion) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select b from items where a = 1");
-	sqxx::result r = st.run();
-	BOOST_CHECK_EQUAL(r.col(0), 11);
-	BOOST_CHECK_EQUAL(r.col(0), "11");
-	BOOST_CHECK_EQUAL(r.col(0).val<std::string>(), "11");
+	st.run();
+	BOOST_CHECK_EQUAL(st.col(0), 11);
+	BOOST_CHECK_EQUAL(st.col(0), "11");
+	BOOST_CHECK_EQUAL(st.col(0).val<std::string>(), "11");
 }
 */
 
 BOOST_AUTO_TEST_CASE(statement_result_next) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
-	auto r = st.run();
-	BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11);
-	r.next();
-	BOOST_CHECK_EQUAL(r.col(0).val<int>(), 22);
+	st.run();
+	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 11);
+	st.next();
+	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 22);
 }
 
 BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
 	int i = 0;
-	auto res = st.run();
-	for (auto r : res) {
+	st.run();
+	for (auto& r : st) {
 		++i;
 		BOOST_CHECK(r);
 		BOOST_CHECK_EQUAL(r.col_count(), 1);
@@ -193,9 +193,9 @@ BOOST_AUTO_TEST_CASE(authorize_handler) {
 
 	auto st = ctx.conn.prepare("select id, v from items where id = 1");
 	BOOST_CHECK(called);
-	auto res = st.run();
-	BOOST_CHECK(!res.eof());
-	BOOST_CHECK_EQUAL(res.col(0).val<int>(), 1);
+	st.run();
+	BOOST_CHECK(!st.eof());
+	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 1);
 	//BOOST_CHECK_EQUAL(static_cast<const void*>(res.col(1).val<const char*>()), static_cast<const void*>(nullptr));
 }
 
