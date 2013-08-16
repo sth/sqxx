@@ -1,7 +1,9 @@
 
 Import('env')
 
+env.BUse('callable', path='../callable')
+
 env.Append(
-		CPPPATH = ['../callable']
-	)
+      CXXFLAGS=['-ggdb', '-O0']
+   )
 

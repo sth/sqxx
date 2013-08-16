@@ -5,10 +5,15 @@ env.Append(
       CXXFLAGS = ['-std=c++11', '-Wall']
    )
 
-import buildsys
-buildsys.setup(env)
-env.BConfigure()
-
+try:
+	import buildsys
+	buildsys.setup(env)
+	env.BConfigure()
+	env.BRequire('callable')
+except ImportError:
+	env.Append(
+			CPPPATH = ['../callable']
+		)
 
 src = Split('''
 	sqxx.cpp
@@ -24,6 +29,9 @@ test_src = Split('''
    test/sqxx_test.cpp
    ''')
 
+
+# tests
+
 env_test = env.Clone()
 env_test.Append(
 		CPPPATH = '.',
@@ -31,4 +39,11 @@ env_test.Append(
 		LIBS = ['boost_unit_test_framework', 'sqlite3']
 	)
 env_test.Program('sqxx_test', test_src + [lib])
+
+env_test.Command('runtest', 'sqxx_test', './sqxx_test')
+
+Alias('test', ['sqxx_test', 'runtest'])
+
+
+Default(lib)
 
