@@ -83,9 +83,11 @@ BOOST_AUTO_TEST_CASE(column_conversion) {
 
 BOOST_AUTO_TEST_CASE(statement_result_conversion) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select b from items where a = 1");
+	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
 	st.run();
 	BOOST_CHECK_EQUAL(st.col<int>(0).val(), 11);
+	BOOST_CHECK_EQUAL(st.col<int64_t>(0).val(), 11);
+	BOOST_CHECK_EQUAL(st.col<double>(0).val(), 11.0);
 	BOOST_CHECK_EQUAL(st.col<const char*>(0).val(), "11");
 	BOOST_CHECK_EQUAL(st.col<std::string>(0).val(), "11");
 }
