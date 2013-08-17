@@ -15,6 +15,7 @@ struct sqlite3_stmt;
 
 namespace sqxx {
 
+/** A error thrown if some sqlite API function returns an error */
 class error : public std::runtime_error {
 public:
 	int code;
@@ -38,6 +39,7 @@ inline blob make_blob(const void *data, int len) {
 	return std::make_pair(data, len);
 }
 
+// TODO: Decide if this is really a good idea
 template<typename T>
 inline blob make_blob(const std::vector<T> &data) {
 	return vector_blob(data);
@@ -219,7 +221,7 @@ public:
 	void close() noexcept;
 	void close_sync();
 
-	typedef std::function<int (size_t, const char*, size_t, const char*)> collation_function_t;
+	typedef std::function<int (int, const char*, int, const char*)> collation_function_t;
 	void create_collation(const char *name, const collation_function_t &coll);
 
 	/** Create a sql statement
@@ -355,7 +357,12 @@ public:
 	parameter param(const std::string &name) { return param(name.c_str()); }
 
 	int col_count() const;
-	column col(int idx);
+	column<void> col(int idx);
+
+	template<typename T>
+	column<T> col(int idx) {
+		return column<T>(*this, idx);
+	}
 
 	// Statement execution
 	/** sqlite3_step() */

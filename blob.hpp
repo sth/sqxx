@@ -13,6 +13,7 @@ struct sqlite3_blob;
 
 namespace sqxx {
 
+/** A boost iostreams source for blobs */
 class blob_source {
 private:
 	sqlite3_blob *handle;

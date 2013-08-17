@@ -199,5 +199,33 @@ BOOST_AUTO_TEST_CASE(authorize_handler) {
 	//BOOST_CHECK_EQUAL(static_cast<const void*>(res.col(1).val<const char*>()), static_cast<const void*>(nullptr));
 }
 
+BOOST_AUTO_TEST_CASE(create_collation) {
+	tab ctx;
+	bool called = false;
+	// test collation function that only compares the common prefix
+	ctx.conn.create_collation("prefix", [&](int llen, const char *lstr, int rlen, const char *rstr) -> int {
+			called = true;
+			int minlen;
+			if (llen < rlen)
+				minlen = llen;
+			else
+				minlen = rlen;
+			return memcmp(lstr, rstr, minlen);
+		});
+
+	ctx.conn.exec("create table tst (id integer, v varchar)");
+	ctx.conn.exec("insert into tst (id, v) values (1, 'abcde'), (2, 'abxyz')");
+	auto st = ctx.conn.exec("select id from tst where v = 'abc' collate prefix");
+	BOOST_CHECK(called);
+
+	std::vector<int> data;
+	for (auto &r : st) {
+		data.push_back(r.col(0).val<int>());
+	}
+
+	BOOST_CHECK_EQUAL(data.size(), 1);
+	BOOST_CHECK_EQUAL(data[0], 1);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

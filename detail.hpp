@@ -8,6 +8,8 @@
 
 namespace sqxx {
 
+// TODO: Check what of this is really used
+
 class static_error : public error {
 public:
 	static_error(int code_arg);

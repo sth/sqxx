@@ -11,7 +11,7 @@
 namespace sqxx {
 
 // ---------------------------------------------------------------------------
-// error
+// errors
 
 #if (SQLITE_VERSION_NUMBER >= 3007015)
 static_error::static_error(int code_arg) : error(code_arg, sqlite3_errstr(code_arg)) {
@@ -31,16 +31,44 @@ managed_error::~managed_error() noexcept {
 recent_error::recent_error(sqlite3 *handle) : error(sqlite3_errcode(handle), sqlite3_errmsg(handle)) {
 }
 
+// ---------------------------------------------------------------------------
+// helper functions
 
-std::pair<int, int> status(int op, bool reset) {
-	int rv;
-	int cur, hi;
-	rv = sqlite3_status(op, &cur, &hi, static_cast<int>(reset));
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-	return std::make_pair(cur, hi);
+void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept {
+	std::cerr << "SQXX: uncaught exeption in " << cbname << ": ";
+	if (!ex) {
+		std::cerr << "(exception not captured)";
+	}
+	else {
+		try {
+			std::rethrow_exception(ex);
+		}
+		catch (const std::exception &rex) {
+			const char *what = rex.what();
+			if (what)
+				std::cerr << what;
+			else
+				std::cerr << "(no message)";
+		}
+		catch (...) {
+			std::cerr << "(unknown exception type)";
+		}
+	}
+	std::cerr << std::endl;
 }
 
+static callback_exception_handler_t callback_exception_handler = default_callback_exception_handler;
+
+void handle_callback_exception(const char *cbname) {
+	if (callback_exception_handler) {
+		try {
+			callback_exception_handler(cbname, std::current_exception());
+		}
+		catch (...) {
+			default_callback_exception_handler("callback exception handler", std::current_exception());
+		}
+	}
+}
 
 struct collation_data_t {
 	connection &c;
@@ -163,21 +191,24 @@ void connection::close() noexcept {
  * 
  * Strings passed to collation callback functions are not null-terminated.
  */
-int call_collation_compare(void *data, int llen, const void *lstr, int rlen, const void *rstr) {
+extern "C"
+int sqxx_call_collation_compare(void *data, int llen, const void *lstr, int rlen, const void *rstr) {
 	typedef connection::collation_function_t cf_t;
 	cf_t *fun = reinterpret_cast<cf_t*>(data);
 	try {
 		return (*fun)(
-				static_cast<size_t>(llen), reinterpret_cast<const char*>(lstr),
-				static_cast<size_t>(rlen), reinterpret_cast<const char*>(rstr)
+				llen, reinterpret_cast<const char*>(lstr),
+				rlen, reinterpret_cast<const char*>(rstr)
 			);
 	}
 	catch (...) {
+		handle_callback_exception("collation function");
 		return 0;
 	}
 }
 
-void call_collation_destroy(void *data) {
+extern "C"
+void sqxx_call_collation_destroy(void *data) {
 	typedef connection::collation_function_t cf_t;
 	cf_t *fun = reinterpret_cast<cf_t*>(data);
 	delete fun;
@@ -188,7 +219,7 @@ void connection::create_collation(const char *name, const connection::collation_
 	int rv;
 	if (coll) {
 		cf_t *data = new cf_t(coll);
-		rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, call_collation_compare, call_collation_destroy);
+		rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, sqxx_call_collation_compare, sqxx_call_collation_destroy);
 		if (rv != SQLITE_OK) {
 			delete data;
 			throw static_error(rv);
@@ -282,42 +313,6 @@ void connection::release_memory() {
 void connection::setup_callbacks() {
 	if (!callbacks)
 		callbacks.reset(new detail::callback_table);
-}
-
-void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept {
-	std::cerr << "SQXX: uncaught exeption in " << cbname << ": ";
-	if (!ex) {
-		std::cerr << "(exception not captured)";
-	}
-	else {
-		try {
-			std::rethrow_exception(ex);
-		}
-		catch (const std::exception &rex) {
-			const char *what = rex.what();
-			if (what)
-				std::cerr << what;
-			else
-				std::cerr << "(no message)";
-		}
-		catch (...) {
-			std::cerr << "(unknown exception type)";
-		}
-	}
-	std::cerr << std::endl;
-}
-
-static callback_exception_handler_t callback_exception_handler = default_callback_exception_handler;
-
-void handle_callback_exception(const char *cbname) {
-	if (callback_exception_handler) {
-		try {
-			callback_exception_handler(cbname, std::current_exception());
-		}
-		catch (...) {
-			default_callback_exception_handler("callback exception handler", std::current_exception());
-		}
-	}
 }
 
 extern "C"
@@ -798,6 +793,16 @@ struct lib_setup {
 		sqlite3_shutdown();
 	}
 };
+
+
+std::pair<int, int> status(int op, bool reset) {
+	int rv;
+	int cur, hi;
+	rv = sqlite3_status(op, &cur, &hi, static_cast<int>(reset));
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return std::make_pair(cur, hi);
+}
 
 namespace {
 	lib_setup setup;
