@@ -110,12 +110,13 @@ public:
 
 
 /** A column of a sql query result */
-class column {
+
+class column_base {
 public:
 	statement &stmt;
 	const int idx;
 
-	column(statement &a_stmt, int a_idx);
+	column_base(statement &a_stmt, int a_idx);
 
 	const char* name() const;
 	const char* database_name() const;
@@ -128,27 +129,20 @@ public:
 	template<typename T>
 	T val() const;
 
+	/*
 	template<typename T>
 	std::vector<T> vec() const {
 		return blob_vector<T>(val<blob>());
 	}
-
-	operator int() const;
-	operator int64_t() const;
-	operator double() const;
-	operator const char*() const;
-	//operator std::string() const;
-	operator blob() const;
-	template<typename T>
-	operator std::vector<T>() const;
+	*/
 };
 
-template<> int column::val<int>() const;
-template<> int64_t column::val<int64_t>() const;
-template<> double column::val<double>() const;
-template<> const char* column::val<const char*>() const;
-template<> inline std::string column::val<std::string>() const { return val<const char*>(); }
-template<> blob column::val<blob>() const;
+template<> int column_base::val<int>() const;
+template<> int64_t column_base::val<int64_t>() const;
+template<> double column_base::val<double>() const;
+template<> const char* column_base::val<const char*>() const;
+template<> inline std::string column_base::val<std::string>() const { return val<const char*>(); }
+template<> blob column_base::val<blob>() const;
 /* No partial specialization of function templates
 template<typename T>
 std::vector<T> column::val<std::vector<T>>() const {
@@ -156,14 +150,28 @@ std::vector<T> column::val<std::vector<T>>() const {
 }
 */
 
-inline column::operator int() const { return val<int>(); }
-inline column::operator int64_t() const { return val<int64_t>(); }
-inline column::operator double() const { return val<double>(); }
-inline column::operator const char*() const { return val<const char*>(); }
-//inline column::operator std::string() const { return val<std::string>(); }
-inline column::operator blob() const { return val<blob>(); }
 template<typename T>
-column::operator std::vector<T>() const { return vec<std::vector<T>>(); }
+class column : public column_base {
+public:
+	//using column_base::column;
+	template <typename... Args>
+	column(Args&&... args) : column_base(std::forward<Args>(args)...) {
+	}
+
+	using column_base::val;
+
+	T val() const { return val<T>(); }
+	operator T() const { return val(); }
+};
+
+template<>
+class column<void> : public column_base {
+public:
+	//using column_base::column;
+	template <typename... Args>
+	column(Args&&... args) : column_base(std::forward<Args>(args)...) {
+	}
+};
 
 
 namespace detail {
@@ -239,6 +247,17 @@ public:
 	 */
 	statement exec(const char *sql);
 	statement exec(const std::string &sql);
+
+	/*
+	template<typename T>
+	std::vector<T> simple_result(int colnum) {
+		std::vector<T> v;
+		for (auto &r : *this) {
+			v.push_back(r.col(colnum).val<T>());
+		}
+		return v;
+	}
+	*/
 
 	/** sqlite3_interrupt() */
 	void interrupt();

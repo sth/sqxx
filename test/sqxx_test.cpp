@@ -54,43 +54,41 @@ BOOST_AUTO_TEST_CASE(column_val) {
 	//BOOST_CHECK(r.col(6).isnull());
 }
 
-BOOST_AUTO_TEST_CASE(column_cast) {
+BOOST_AUTO_TEST_CASE(column_typed_val) {
 	tab ctx;
-	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
+	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
 	st.run();
-	BOOST_CHECK_EQUAL(static_cast<int>(st.col(0)), 11);
-	BOOST_CHECK_EQUAL(static_cast<int64_t>(st.col(0)), 11);
-	BOOST_CHECK_EQUAL(static_cast<double>(st.col(0)), 11.0);
-	BOOST_CHECK_EQUAL(static_cast<const char*>(st.col(0)), "11");
-	BOOST_CHECK_EQUAL(static_cast<std::string>(st.col(0)), "11");
+	BOOST_CHECK_EQUAL(st.col<int>(1).val(), 2);
+	BOOST_CHECK_EQUAL(st.col<int64_t>(2).val(), 3000000000000L);
+	BOOST_CHECK_EQUAL(st.col<double>(3).val(), 4.5);
+	BOOST_CHECK_EQUAL(st.col<const char*>(4).val(), "abc");
+	BOOST_CHECK_EQUAL(st.col<std::string>(4).val(), "abc");
 }
 
 BOOST_AUTO_TEST_CASE(column_conversion) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
 	st.run();
-	int v1 = st.col(1);
+	int v1 = st.col<int>(1);
 	BOOST_CHECK_EQUAL(v1, 2);
-	int64_t v2 = st.col(1);
+	int64_t v2 = st.col<int64_t>(1);
 	BOOST_CHECK_EQUAL(v2, 2);
-	double v3 = st.col(1);
+	double v3 = st.col<double>(1);
 	BOOST_CHECK_EQUAL(v3, 2.0);
-	const char *v4 = st.col(1);
+	const char *v4 = st.col<const char*>(1);
 	BOOST_CHECK_EQUAL(v4, "2");
-	std::string v5 = static_cast<std::string>(st.col(1));
+	std::string v5 = st.col<std::string>(1);
 	BOOST_CHECK_EQUAL(v5, "2");
 }
 
-/*
 BOOST_AUTO_TEST_CASE(statement_result_conversion) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select b from items where a = 1");
 	st.run();
-	BOOST_CHECK_EQUAL(st.col(0), 11);
-	BOOST_CHECK_EQUAL(st.col(0), "11");
-	BOOST_CHECK_EQUAL(st.col(0).val<std::string>(), "11");
+	BOOST_CHECK_EQUAL(st.col<int>(0).val(), 11);
+	BOOST_CHECK_EQUAL(st.col<const char*>(0).val(), "11");
+	BOOST_CHECK_EQUAL(st.col<std::string>(0).val(), "11");
 }
-*/
 
 BOOST_AUTO_TEST_CASE(statement_result_next) {
 	tab ctx;

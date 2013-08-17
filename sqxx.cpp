@@ -605,8 +605,8 @@ int statement::col_count() const {
 	return sqlite3_column_count(handle);
 }
 
-column statement::col(int idx) {
-	return column(*this, idx);
+column<void> statement::col(int idx) {
+	return column<void>(*this, idx);
 }
 
 void statement::step() {
@@ -708,56 +708,55 @@ void parameter::bind_zeroblob(int len) {
 // ---------------------------------------------------------------------------
 // column
 
-column::column(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
+column_base::column_base(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
 }
 
-const char* column::name() const {
+const char* column_base::name() const {
 	return sqlite3_column_name(stmt.raw(), idx);
 }
 
-const char* column::database_name() const {
+const char* column_base::database_name() const {
 	return sqlite3_column_database_name(stmt.raw(), idx);
 }
 
-const char* column::table_name() const {
+const char* column_base::table_name() const {
 	return sqlite3_column_table_name(stmt.raw(), idx);
 }
 
-const char* column::origin_name() const {
+const char* column_base::origin_name() const {
 	return sqlite3_column_origin_name(stmt.raw(), idx);
 }
 
-int column::type() const {
+int column_base::type() const {
 	return sqlite3_column_type(stmt.raw(), idx);
 }
 
-const char* column::decl_type() const {
+const char* column_base::decl_type() const {
 	return sqlite3_column_decltype(stmt.raw(), idx);
 }
 
-
 template<>
-int column::val<int>() const {
+int column_base::val<int>() const {
 	return sqlite3_column_int(stmt.raw(), idx);
 }
 
 template<>
-int64_t column::val<int64_t>() const {
+int64_t column_base::val<int64_t>() const {
 	return sqlite3_column_int64(stmt.raw(), idx);
 }
 
 template<>
-double column::val<double>() const {
+double column_base::val<double>() const {
 	return sqlite3_column_double(stmt.raw(), idx);
 }
 
 template<>
-const char* column::val<const char*>() const {
+const char* column_base::val<const char*>() const {
 	return reinterpret_cast<const char*>(sqlite3_column_text(stmt.raw(), idx));
 }
 
 template<>
-blob column::val<blob>() const {
+blob column_base::val<blob>() const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const void *data = sqlite3_column_blob(stmt.raw(), idx);
 	int len = sqlite3_column_bytes(stmt.raw(), idx);
