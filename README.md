@@ -18,7 +18,7 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
 ### Main classes
 
 The two main classes are `sqxx::connection`, which represents a database
-conection, and `sqxx::statement`, which represents a sql statement including
+connection, and `sqxx::statement`, which represents a SQL statement including
 binding of parameters, executing the statement, and accessing the results of
 the execution.
 
@@ -79,7 +79,7 @@ to access data in UTF-8, UTF-16 little endian or UTF-16 big endian. This
 complexity was omitted in this library and `sqxx` always uses the UTF-8
 versions of functions and expects all strings to be encoded in UTF-8.
 Whenever there is a choice between several encodings in the C API, `sqxx`
-uses UTF-8 and assues the corresponding data is encoded UTF-8.
+uses UTF-8 and assumes the corresponding data is encoded UTF-8.
 
 ### Consistent naming for handler/callback functions
 
