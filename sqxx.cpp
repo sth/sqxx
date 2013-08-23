@@ -671,25 +671,33 @@ void parameter::bind() {
 		throw static_error(rv);
 }
 
-void parameter::bind_int(int value) {
+template<>
+if_selected_type<int, void, int, int64_t, double>
+parameter::bind<int>(int value) {
 	int rv = sqlite3_bind_int(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind_int64(int64_t value) {
+template<>
+if_selected_type<int64_t, void, int, int64_t, double>
+parameter::bind<int64_t>(int64_t value) {
 	int rv = sqlite3_bind_int64(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind_double(double value) {
+template<>
+if_selected_type<double, void, int, int64_t, double>
+parameter::bind<double>(double value) {
 	int rv = sqlite3_bind_double(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind_text(const char *value, bool copy) {
+template<>
+if_selected_type<const char*, void, const char*>
+parameter::bind<const char*>(const char *value, bool copy) {
 	if (value) {
 		int rv = sqlite3_bind_text(stmt.raw(), idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 		if (rv != SQLITE_OK)
@@ -700,7 +708,9 @@ void parameter::bind_text(const char *value, bool copy) {
 	}
 }
 
-void parameter::bind_blob(const blob &value, bool copy) {
+template<>
+if_selected_type<blob, void, std::string, sqxx::blob>
+parameter::bind<blob>(const blob &value, bool copy) {
 	if (value.first) {
 		int rv = sqlite3_bind_blob(stmt.raw(), idx+1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 		if (rv != SQLITE_OK)

@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(statement_param_bind) {
 
 	st.reset();
 	st.clear_bindings();
-	st.param(1).bind_text("xyz");
+	st.param(0).bind("xyz");
 	st.run();
 	BOOST_CHECK(st.eof());
 }

@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <vector>
 #include <memory>
+#include <utility>
 
 // structs from <sqlite3.h>
 struct sqlite3;
@@ -75,26 +76,30 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 */
 
 namespace detail {
-	// Template to check if a type is supported as a column type by this api
-	template<typename T>
-	struct is_sqxx_db_type : std::false_type {};
 
-	template<>
-	struct is_sqxx_db_type<int> : std::true_type {};
-	template<>
-	struct is_sqxx_db_type<int64_t> : std::true_type {};
-	template<>
-	struct is_sqxx_db_type<double> : std::true_type {};
-	template<>
-	struct is_sqxx_db_type<const char*> : std::true_type {};
-	template<>
-	struct is_sqxx_db_type<std::string> : std::true_type {};
-	template<>
-	struct is_sqxx_db_type<blob> : std::true_type {};
+// Check if type T is any of the other ones listed in Ts...
+template<typename T, typename... Ts>
+struct is_selected {
+	static const bool value = false;
+};
+
+template<typename T, typename T2, typename... Ts>
+struct is_selected<T, T2, Ts...> {
+	static const bool value = std::is_same<T, T2>::value || is_selected<T, Ts...>::value;
+};
+
 }
 
+/** `std::enable_if<>` for all types in the `Ts...` list */
+template<typename T, typename R, typename... Ts>
+using if_selected_type = typename std::enable_if<detail::is_selected<T, Ts...>::value, R>::type;
+
+/** `std::enable_if<>` for the types supported by sqxx's db interface
+ * (`int`, `int64_t`, `double`, `const char*`, `std::string`, `blob`)
+ */
 template<typename T, typename R>
-using if_sqxx_db_type = typename std::enable_if<detail::is_sqxx_db_type<T>::value, R>::type;
+using if_sqxx_db_type = if_selected_type<T, R,
+		int, int64_t, double, const char*, std::string, blob>;
 
 
 class statement;
@@ -116,34 +121,49 @@ public:
 	// Binds a NULL
 	void bind();
 
-	// Binds values of different types
-	void bind_int(int value);
-	void bind_int64(int64_t value);
-	void bind_double(double value);
-	void bind_text(const char *value, bool copy=true);
-	void bind_text(const std::string &value, bool copy=true) {
-		bind_text(value.c_str(), copy);
-	}
-	void bind_blob(const blob &value, bool copy=true);
-
-	/** Overloaded versions of bind()
+	/** Templated versions of bind()
 	 *
-	 * This easily leads to ambiguities if used with parameters with
-	 * not exactly matching types. For example calling `bind(123U)`
-	 * (a `unsigned` value) is ambiguous between bind(int), bind(int64_t)
-	 * and bind(double).
-	 *
-	 * If this happens (or perhaps generally), use the type specific functions
-	 * above.
+	 * Allows to select a certain 
 	 */
-	void bind(int value)                                { bind_int(value); }
-	void bind(int64_t value)                            { bind_int64(value); }
-	void bind(double value)                             { bind_double(value); }
-	void bind(const char *value, bool copy=true)        { bind_text(value, copy); }
-	void bind(const std::string &value, bool copy=true) { bind_text(value, copy); }
-	void bind(const blob &value, bool copy=true)        { bind_blob(value, copy); }
+
+	template<typename T>
+	if_selected_type<T, void, int, int64_t, double>
+	bind(T value);
+
+	template<typename T>
+	if_selected_type<T, void, const char*>
+	bind(T value, bool copy=true);
+
+	template<typename T>
+	if_selected_type<T, void, std::string, sqxx::blob>
+	bind(const T &v, bool copy=true);
 };
 
+template<>
+if_selected_type<int, void, int, int64_t, double>
+parameter::bind<int>(int value);
+
+template<>
+if_selected_type<int64_t, void, int, int64_t, double>
+parameter::bind<int64_t>(int64_t value);
+
+template<>
+if_selected_type<double, void, int, int64_t, double>
+parameter::bind<double>(double value);
+
+template<>
+if_selected_type<const char*, void, const char*>
+parameter::bind<const char*>(const char* value, bool copy);
+
+template<>
+if_selected_type<std::string, void, std::string, sqxx::blob>
+inline parameter::bind<std::string>(const std::string &value, bool copy) {
+	bind<const char*>(value.c_str(), copy);
+}
+
+template<>
+if_selected_type<blob, void, std::string, sqxx::blob>
+parameter::bind<blob>(const blob &v, bool copy);
 
 /** A column of a sql query result */
 
