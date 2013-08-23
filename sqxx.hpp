@@ -40,6 +40,7 @@ inline blob make_blob(const void *data, int len) {
 }
 
 // TODO: Decide if this is really a good idea
+/*
 template<typename T>
 inline blob make_blob(const std::vector<T> &data) {
 	return vector_blob(data);
@@ -62,6 +63,7 @@ typename std::enable_if<
 >::type vector_blob(const std::vector<T> &v) {
 	return std::make_pair(v.data(), v.size() * sizeof(T));
 }
+*/
 
 /*
 template<typename T>
@@ -71,6 +73,29 @@ typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(c
 	return std::vector<T>(begin, end);
 }
 */
+
+namespace detail {
+	// Template to check if a type is supported as a column type by this api
+	template<typename T>
+	struct is_sqxx_db_type : std::false_type {};
+
+	template<>
+	struct is_sqxx_db_type<int> : std::true_type {};
+	template<>
+	struct is_sqxx_db_type<int64_t> : std::true_type {};
+	template<>
+	struct is_sqxx_db_type<double> : std::true_type {};
+	template<>
+	struct is_sqxx_db_type<const char*> : std::true_type {};
+	template<>
+	struct is_sqxx_db_type<std::string> : std::true_type {};
+	template<>
+	struct is_sqxx_db_type<blob> : std::true_type {};
+}
+
+template<typename T, typename R>
+using if_sqxx_db_type = typename std::enable_if<detail::is_sqxx_db_type<T>::value, R>::type;
+
 
 class statement;
 
@@ -138,7 +163,7 @@ public:
 	const char* decl_type() const;
 
 	template<typename T>
-	T val() const;
+	if_sqxx_db_type<T, T> val() const;
 
 	/*
 	template<typename T>
@@ -154,12 +179,6 @@ template<> double column_base::val<double>() const;
 template<> const char* column_base::val<const char*>() const;
 template<> inline std::string column_base::val<std::string>() const { return val<const char*>(); }
 template<> blob column_base::val<blob>() const;
-/* No partial specialization of function templates
-template<typename T>
-std::vector<T> column::val<std::vector<T>>() const {
-	return blob_vector<T>(val<blob>());
-}
-*/
 
 template<typename T>
 class column : public column_base {
@@ -183,7 +202,6 @@ public:
 	column(Args&&... args) : column_base(std::forward<Args>(args)...) {
 	}
 };
-
 
 namespace detail {
 	struct callback_table;
@@ -390,7 +408,7 @@ public:
 	column<void> col(int idx);
 
 	template<typename T>
-	column<T> col(int idx) {
+	if_sqxx_db_type<T, column<T>> col(int idx) {
 		return column<T>(*this, idx);
 	}
 
