@@ -106,6 +106,26 @@ BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
 	int i = 0;
 	st.run();
+	BOOST_CHECK_EQUAL(st.col_count(), 1);
+	for (auto& r : st) {
+		++i;
+		BOOST_CHECK(r);
+		BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11*i);
+	}
+	BOOST_CHECK_EQUAL(i, 3);
+}
+
+BOOST_AUTO_TEST_CASE(statement_param_bind) {
+	tab ctx;
+	sqxx::statement st = ctx.conn.prepare("select id from types where s = ?");
+	st.param(0).bind("hello");
+	st.run();
+
+	st.reset();
+	st.param(0).bind_text("bye");
+	st.run();
+
+	/*
 	for (auto& r : st) {
 		++i;
 		BOOST_CHECK(r);
@@ -113,6 +133,7 @@ BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 		BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11*i);
 	}
 	BOOST_CHECK_EQUAL(i, 3);
+	*/
 }
 
 BOOST_AUTO_TEST_CASE(commit_handler) {

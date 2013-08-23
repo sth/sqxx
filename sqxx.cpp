@@ -665,45 +665,54 @@ const char* parameter::name() const {
 	return n;
 }
 
-void parameter::bind(int value) {
+void parameter::bind() {
+	int rv = sqlite3_bind_null(stmt.raw(), idx);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+void parameter::bind_int(int value) {
 	int rv = sqlite3_bind_int(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind(int64_t value) {
+void parameter::bind_int64(int64_t value) {
 	int rv = sqlite3_bind_int64(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind(double value) {
+void parameter::bind_double(double value) {
 	int rv = sqlite3_bind_double(stmt.raw(), idx, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
-void parameter::bind(const char *value, bool copy) {
-	int rv;
-	if (value == nullptr)
-		rv = sqlite3_bind_null(stmt.raw(), idx);
-	else
-		rv = sqlite3_bind_text(stmt.raw(), idx, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
+void parameter::bind_text(const char *value, bool copy) {
+	if (value) {
+		int rv = sqlite3_bind_text(stmt.raw(), idx, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
+	else {
+		bind();
+	}
 }
 
-void parameter::bind(const blob &value, bool copy) {
-	int rv = sqlite3_bind_blob(stmt.raw(), idx, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
+void parameter::bind_blob(const blob &value, bool copy) {
+	if (value.first) {
+		int rv = sqlite3_bind_blob(stmt.raw(), idx, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
+	else {
+		int rv = sqlite3_bind_zeroblob(stmt.raw(), idx, value.second);
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
 }
 
-void parameter::bind_zeroblob(int len) {
-	int rv = sqlite3_bind_zeroblob(stmt.raw(), idx, len);
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-}
 
 // ---------------------------------------------------------------------------
 // column

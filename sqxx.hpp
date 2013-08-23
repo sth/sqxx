@@ -82,30 +82,41 @@ class statement;
 class parameter {
 public:
 	statement &stmt;
-	int idx;
+	const int idx;
 
 	parameter(statement &a_stmt, int a_idx);
 
 	const char* name() const;
 
-	void bind(int value);
-	void bind(int64_t value);
-	void bind(double value);
-	void bind(const char *value, bool copy = true);
-	void bind(const std::string &value, bool copy = true) { bind(value.c_str(), copy); }
-	void bind(const blob &value, bool copy = true);
-	template<typename T>
-	void bind(const std::vector<T> &value, bool copy = true) { bind(vector_blob(value), copy); }
-	void bind_zeroblob(int len);
+	// Binds a NULL
+	void bind();
 
-	parameter& operator=(int value) { bind(value); return *this; }
-	parameter& operator=(int64_t value) { bind(value); return *this; }
-	parameter& operator=(double value) { bind(value); return *this; }
-	parameter& operator=(const char *value) { bind(value, true); return *this; }
-	parameter& operator=(const std::string &value) { bind(value, true); return *this; }
-	parameter& operator=(const blob &value) { bind(value, true); return *this; }
-	template<typename T>
-	parameter& operator=(const std::vector<T> &value) { bind(vector_blob(value), true); return *this; }
+	// Binds values of different types
+	void bind_int(int value);
+	void bind_int64(int64_t value);
+	void bind_double(double value);
+	void bind_text(const char *value, bool copy=true);
+	void bind_text(const std::string &value, bool copy=true) {
+		bind_text(value.c_str(), copy);
+	}
+	void bind_blob(const blob &value, bool copy=true);
+
+	/** Overloaded versions of bind()
+	 *
+	 * This easily leads to ambiguities if used with parameters with
+	 * not exactly matching types. For example calling `bind(123U)`
+	 * (a `unsigned` value) is ambiguous between bind(int), bind(int64_t)
+	 * and bind(double).
+	 *
+	 * If this happens (or perhaps generally), use the type specific functions
+	 * above.
+	 */
+	void bind(int value)                                { bind_int(value); }
+	void bind(int64_t value)                            { bind_int64(value); }
+	void bind(double value)                             { bind_double(value); }
+	void bind(const char *value, bool copy=true)        { bind_text(value, copy); }
+	void bind(const std::string &value, bool copy=true) { bind_text(value, copy); }
+	void bind(const blob &value, bool copy=true)        { bind_blob(value, copy); }
 };
 
 
