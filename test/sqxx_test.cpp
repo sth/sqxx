@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 BOOST_AUTO_TEST_CASE(statement_param_bind) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select id from types where s = ?");
-	st.param(1).bind("abc");
+	st.param(0).bind("abc");
 	st.run();
 	BOOST_CHECK(!st.eof());
 	BOOST_CHECK_EQUAL(st.col<int>(0).val(), 1);

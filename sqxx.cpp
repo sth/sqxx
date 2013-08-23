@@ -666,32 +666,32 @@ const char* parameter::name() const {
 }
 
 void parameter::bind() {
-	int rv = sqlite3_bind_null(stmt.raw(), idx-1);
+	int rv = sqlite3_bind_null(stmt.raw(), idx+1);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind_int(int value) {
-	int rv = sqlite3_bind_int(stmt.raw(), idx-1, value);
+	int rv = sqlite3_bind_int(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind_int64(int64_t value) {
-	int rv = sqlite3_bind_int64(stmt.raw(), idx-1, value);
+	int rv = sqlite3_bind_int64(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind_double(double value) {
-	int rv = sqlite3_bind_double(stmt.raw(), idx-1, value);
+	int rv = sqlite3_bind_double(stmt.raw(), idx+1, value);
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
 
 void parameter::bind_text(const char *value, bool copy) {
 	if (value) {
-		int rv = sqlite3_bind_text(stmt.raw(), idx-1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		int rv = sqlite3_bind_text(stmt.raw(), idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
@@ -702,12 +702,12 @@ void parameter::bind_text(const char *value, bool copy) {
 
 void parameter::bind_blob(const blob &value, bool copy) {
 	if (value.first) {
-		int rv = sqlite3_bind_blob(stmt.raw(), idx-1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		int rv = sqlite3_bind_blob(stmt.raw(), idx+1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
 	else {
-		int rv = sqlite3_bind_zeroblob(stmt.raw(), idx-1, value.second);
+		int rv = sqlite3_bind_zeroblob(stmt.raw(), idx+1, value.second);
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
