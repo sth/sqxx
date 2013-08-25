@@ -104,10 +104,9 @@ using if_sqxx_db_type = if_selected_type<T, R,
 
 class statement;
 
+
 /**
  * Represents a parameter of a prepared statement
- *
- * Supports binding of values to that parameter.
  */
 class parameter {
 public:
@@ -116,6 +115,7 @@ public:
 
 	parameter(statement &a_stmt, int a_idx);
 
+	/** sqlite3_parameter_name() */
 	const char* name() const;
 
 	/* Binds a NULL
@@ -126,9 +126,13 @@ public:
 
 	/** Templated versions of bind()
 	 *
-	 * Allows to select a certain 
+	 * For each supported type an appropriate specialization is provided,
+	 * calling the underlying C API function.
+	 *
+	 * Using templates allows the user to specify the desired type as
+	 * `bind<type>(value)`. This can be used to easily disambiguate cases
+	 * where the compiler can't automatically deduce the correct type/overload.
 	 */
-
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
 	bind(T value);
@@ -142,55 +146,7 @@ public:
 	bind(const T &value, bool copy=true);
 };
 
-/** Set the parameter to a int value.
- *
- * sqlite3_bind_int()
- */
-template<>
-void parameter::bind<int>(int value);
 
-/** Set the parameter to a int64_t value
- *
- * sqlite3_bind_int64()
- */
-template<>
-void parameter::bind<int64_t>(int64_t value);
-
-/** Set the parameter to a double value
- *
- * sqlite3_bind_double()
- */
-template<>
-void parameter::bind<double>(double value);
-
-/** Set the parameter to a const char* value.
- *
- * With copy=false, tells sqlite to not make an internal copy of the value.
- * This means that the value passed in has to stay available until
- * the query is completed.
- *
- * If `value` is a null pointer, this binds a NULL.
- *
- * sqlite3_bind_text()
- */
-template<>
-void parameter::bind<const char*>(const char* value, bool copy);
-
-template<>
-inline void parameter::bind<std::string>(const std::string &value, bool copy) {
-	bind<const char*>(value.c_str(), copy);
-}
-
-/** Set the parameter to a blob.
- *
- * If the data pointer of the blob is a null pointer,
- * it creates a blob consisting of zeroes.
- *
- * sqlite3_bind_blob()
- * sqlite3_bind_zeroblob()
- */
-template<>
-void parameter::bind<blob>(const blob &value, bool copy);
 
 /** A column of a sql query result */
 
@@ -201,23 +157,23 @@ public:
 
 	column_base(statement &a_stmt, int a_idx);
 
+	/** sqlite3_column_name() */
 	const char* name() const;
+	/** sqlite3_column_database_name() */
 	const char* database_name() const;
+	/** sqlite3_column_table_name() */
 	const char* table_name() const;
+	/** sqlite3_column_origin_name() */
 	const char* origin_name() const;
 
+	/** sqlite3_column_type() */
 	int type() const;
+	/** sqlite3_column_decltype() */
 	const char* decl_type() const;
 
+	/** Access the value of the column in the current result row. */
 	template<typename T>
 	if_sqxx_db_type<T, T> val() const;
-
-	/*
-	template<typename T>
-	std::vector<T> vec() const {
-		return blob_vector<T>(val<blob>());
-	}
-	*/
 };
 
 /** sqlite3_column_int() */
@@ -491,42 +447,42 @@ public:
 	 *     bind<int64_t>(1, 123U);
 	 *
 	 */
-	void bind(int idx) { param(idx).bind(); }
-	void bind(const char *name) { param(name).bind(); }
-	void bind(const std::string &name) { param(name).bind(); }
+	void bind(int idx);
+	void bind(const char *name) { bind(param_index(name)); }
+	void bind(const std::string &name) { bind(name.c_str()); }
 
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
-	bind(int idx, T value) { param(idx).bind<T>(value); }
+	bind(int idx, T value);
 
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
-	bind(const char *name, T value) { param(name).bind<T>(value); }
+	bind(const char *name, T value) { bind<T>(param_index(name), value); }
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
-	bind(const std::string &name, T value) { param(name).bind<T>(value); }
+	bind(const std::string &name, T value) { bind<T>(name.c_str(), value); }
 
 	template<typename T>
 	if_selected_type<T, void, const char*>
-	bind(int idx, T value, bool copy=true) { param(idx).bind<T>(value, copy); }
+	bind(int idx, T value, bool copy=true);
 
 	template<typename T>
 	if_selected_type<T, void, const char*>
-	bind(const char *name, T value, bool copy=true) { param(name).bind<T>(value, copy); }
+	bind(const char *name, T value, bool copy=true) { bind<T>(param_index(name), value, copy); }
 	template<typename T>
 	if_selected_type<T, void, const char*>
-	bind(const std::string &name, T value, bool copy=true) { param(name).bind<T>(value, copy); }
+	bind(const std::string &name, T value, bool copy=true) { bind<T>(name.c_str(), value, copy); }
 
 	template<typename T>
 	if_selected_type<T, void, std::string, blob>
-	bind(int idx, const T &value, bool copy=true) { param(idx).bind<T>(value, copy); }
+	bind(int idx, const T &value, bool copy=true);
 
 	template<typename T>
 	if_selected_type<T, void, std::string, blob>
-	bind(const char *name, const T &value, bool copy=true) { param(name).bind<T>(value, copy); }
+	bind(const char *name, const T &value, bool copy=true) { bind<T>(param_index(name), value, copy); }
 	template<typename T>
 	if_selected_type<T, void, std::string, blob>
-	bind(const std::string &name, const T &value, bool copy=true) { param(name).bind<T>(value, copy); }
+	bind(const std::string &name, const T &value, bool copy=true) { bind<T>(name.c_str(), value, copy); }
 
 
 	// Result columns
@@ -607,6 +563,70 @@ public:
 	sqlite3_stmt* raw() { return handle; }
 };
 
+
+/** Set the parameter to a int value.
+ *
+ * sqlite3_bind_int()
+ */
+template<>
+void statement::bind<int>(int idx, int value);
+
+/** Set the parameter to a int64_t value
+ *
+ * sqlite3_bind_int64()
+ */
+template<>
+void statement::bind<int64_t>(int idx, int64_t value);
+
+/** Set the parameter to a double value
+ *
+ * sqlite3_bind_double()
+ */
+template<>
+void statement::bind<double>(int idx, double value);
+
+/** Set the parameter to a const char* value.
+ *
+ * With copy=false, tells sqlite to not make an internal copy of the value.
+ * This means that the value passed in has to stay available until
+ * the query is completed.
+ *
+ * If `value` is a null pointer, this binds a NULL.
+ *
+ * sqlite3_bind_text()
+ */
+template<>
+void statement::bind<const char*>(int idx, const char* value, bool copy);
+
+template<>
+inline void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
+	bind<const char*>(idx, value.c_str(), copy);
+}
+
+/** Set the parameter to a blob.
+ *
+ * If the data pointer of the blob is a null pointer,
+ * it creates a blob consisting of zeroes.
+ *
+ * sqlite3_bind_blob()
+ * sqlite3_bind_zeroblob()
+ */
+template<>
+void statement::bind<blob>(int idx, const blob &value, bool copy);
+
+inline void parameter::bind() { stmt.bind(idx); }
+
+template<typename T>
+if_selected_type<T, void, int, int64_t, double>
+parameter::bind(T value) { stmt.bind<T>(idx, value); }
+
+template<typename T>
+if_selected_type<T, void, const char*>
+parameter::bind(T value, bool copy) { stmt.bind<T>(idx, value, copy); }
+
+template<typename T>
+if_selected_type<T, void, std::string, blob>
+parameter::bind(const T &value, bool copy) { stmt.bind<T>(idx, value, copy); }
 
 // Handle exceptions thrown from C++ callbacks
 typedef std::function<void (const char*, std::exception_ptr)> callback_exception_handler_t;

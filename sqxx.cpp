@@ -601,6 +601,60 @@ parameter statement::param(const char *name) {
 	return parameter(*this, param_index(name));
 }
 
+void statement::bind(int idx) {
+	int rv = sqlite3_bind_null(handle, idx+1);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+template<>
+void statement::bind<int>(int idx, int value) {
+	int rv = sqlite3_bind_int(handle, idx+1, value);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+template<>
+void statement::bind<int64_t>(int idx, int64_t value) {
+	int rv = sqlite3_bind_int64(handle, idx+1, value);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+template<>
+void statement::bind<double>(int idx, double value) {
+	int rv = sqlite3_bind_double(handle, idx+1, value);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+template<>
+void statement::bind<const char*>(int idx, const char *value, bool copy) {
+	if (value) {
+		int rv = sqlite3_bind_text(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
+	else {
+		bind(idx);
+	}
+}
+
+template<>
+void statement::bind<blob>(int idx, const blob &value, bool copy) {
+	if (value.first) {
+		int rv = sqlite3_bind_blob(handle, idx+1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
+	else {
+		int rv = sqlite3_bind_zeroblob(handle, idx+1, value.second);
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
+	}
+}
+
+
 int statement::col_count() const {
 	return sqlite3_column_count(handle);
 }
@@ -664,60 +718,6 @@ const char* parameter::name() const {
 		throw error(SQLITE_RANGE, "cannot determine parameter name");
 	return n;
 }
-
-void parameter::bind() {
-	int rv = sqlite3_bind_null(stmt.raw(), idx+1);
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-}
-
-template<>
-void parameter::bind<int>(int value) {
-	int rv = sqlite3_bind_int(stmt.raw(), idx+1, value);
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-}
-
-template<>
-void parameter::bind<int64_t>(int64_t value) {
-	int rv = sqlite3_bind_int64(stmt.raw(), idx+1, value);
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-}
-
-template<>
-void parameter::bind<double>(double value) {
-	int rv = sqlite3_bind_double(stmt.raw(), idx+1, value);
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-}
-
-template<>
-void parameter::bind<const char*>(const char *value, bool copy) {
-	if (value) {
-		int rv = sqlite3_bind_text(stmt.raw(), idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
-		if (rv != SQLITE_OK)
-			throw static_error(rv);
-	}
-	else {
-		bind();
-	}
-}
-
-template<>
-void parameter::bind<blob>(const blob &value, bool copy) {
-	if (value.first) {
-		int rv = sqlite3_bind_blob(stmt.raw(), idx+1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
-		if (rv != SQLITE_OK)
-			throw static_error(rv);
-	}
-	else {
-		int rv = sqlite3_bind_zeroblob(stmt.raw(), idx+1, value.second);
-		if (rv != SQLITE_OK)
-			throw static_error(rv);
-	}
-}
-
 
 // ---------------------------------------------------------------------------
 // column
