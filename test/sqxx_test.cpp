@@ -118,14 +118,14 @@ BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 BOOST_AUTO_TEST_CASE(statement_param_bind) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select id from types where s = ?");
-	st.param(0).bind("abc");
+	st.bind(0, "abc");
 	st.run();
 	BOOST_CHECK(!st.eof());
-	BOOST_CHECK_EQUAL(st.col<int>(0).val(), 1);
+	BOOST_CHECK_EQUAL(st.val<int>(0), 1);
 
 	st.reset();
 	st.clear_bindings();
-	st.param(0).bind("xyz");
+	st.bind(0, "xyz");
 	st.run();
 	BOOST_CHECK(st.eof());
 }
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(authorize_handler) {
 	BOOST_CHECK(called);
 	st.run();
 	BOOST_CHECK(!st.eof());
-	BOOST_CHECK_EQUAL(st.col(0).val<int>(), 1);
+	BOOST_CHECK_EQUAL(st.val<int>(0), 1);
 	//BOOST_CHECK_EQUAL(static_cast<const void*>(res.col(1).val<const char*>()), static_cast<const void*>(nullptr));
 }
 
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 
 	std::vector<int> data;
 	for (auto &r : st) {
-		data.push_back(r.col(0).val<int>());
+		data.push_back(r.val<int>(0));
 	}
 
 	BOOST_CHECK_EQUAL(data.size(), 1);

@@ -35,20 +35,20 @@ idea.
     conn.exec("insert into items (id, value) values (1, 11), (2, 22), (3, 33)");
 
     // getting results
-    sqxx::statement s1 = conn.exec("select value from items where id = 1");
-    std::cout << "id=1 value=" << s1.col(0).val<int>() << std::endl;
+    sqxx::statement s1 = conn.exec("select * from items where id = 1");
+    std::cout << "id=" << s1.val<int>(0) << " value=" << s1.val<int>(1) << std::endl;
 
     // iterating over multiple result rows
     sqxx::statement s2 = conn.exec("select * from items where id = 1");
     for (auto &r : s2) {
-       std::cout << r.col(1).val<int>() << std::endl;
+       std::cout << r.val<int>(1) << std::endl;
     }
 
     // Prepared statements
     sqxx::statement s3 = conn.prepare("select value from items where id = ?");
     s3.param(0).bind_int(2);
     s3.run();
-    std::cout << "id=2 value=" << s3.col(0).val<int>() << std::endl;
+    std::cout << "id=2 value=" << s3.val<int>(0) << std::endl;
 
     //s3.reset();
 	 //s3.clear_bindings();
