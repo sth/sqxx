@@ -118,21 +118,12 @@ public:
 	/** sqlite3_parameter_name() */
 	const char* name() const;
 
-	/* Binds a NULL
+	/** Bind a value to this parameter
 	 *
-	 * sqlite3_bind_null()
+	 * For details see statement::bind()
 	 */
 	void bind();
 
-	/** Templated versions of bind()
-	 *
-	 * For each supported type an appropriate specialization is provided,
-	 * calling the underlying C API function.
-	 *
-	 * Using templates allows the user to specify the desired type as
-	 * `bind<type>(value)`. This can be used to easily disambiguate cases
-	 * where the compiler can't automatically deduce the correct type/overload.
-	 */
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
 	bind(T value);
@@ -421,7 +412,14 @@ public:
 	parameter param(const char *name);
 	parameter param(const std::string &name) { return param(name.c_str()); }
 
-	/** Bind parameter values, see parameter::bind() for details.
+	/** Bind parameter values in prepared statements
+	 *
+	 * For each supported type an appropriate specialization is provided,
+	 * calling the underlying C API function.
+	 *
+	 * Using templates allows the user to specify the desired type as
+	 * `bind<type>(idx, value)`. This can be used to easily disambiguate cases
+	 * where the compiler can't automatically deduce the correct type/overload.
 	 *
 	 * The first parameter of each of these functions is an index or a name
 	 * of the parameter, the second parameter the value that should be bound.
@@ -430,7 +428,7 @@ public:
 	 *     bind(0, 123);
 	 *     bind("name", 345):
 	 *
-	 * For string and blob parameters a optional third parameter is
+	 * For string and blob parameters an optional third parameter is
 	 * available, that specifies if sqlite should make an internal copy of
 	 * the passed value. If the parameter is false and no copy is created, the
 	 * caller has to make sure that the passed value stays alive and isn't
@@ -447,6 +445,8 @@ public:
 	 *     bind<int64_t>(1, 123U);
 	 *
 	 */
+
+	/** Set a parameter to a SQL NULL value */
 	void bind(int idx);
 	void bind(const char *name) { bind(param_index(name)); }
 	void bind(const std::string &name) { bind(name.c_str()); }
@@ -517,14 +517,15 @@ public:
 
 	//int changes();
 
+	/** sqlite3_reset() */
 	void reset();
+	/** sqlite3_clear_bindings() */
 	void clear_bindings();
 
 	// Result row access
 
-	// TODO: The following functions all do the same thing, remove some
-	bool complete() const;
-	bool eof() const { return completed; }
+	/** Check if all result rows have been processed */
+	bool done() const { return completed; }
 	operator bool() const { return !completed; }
 
 	class row_iterator : public std::iterator<std::input_iterator_tag, statement> {
@@ -564,28 +565,28 @@ public:
 };
 
 
-/** Set the parameter to a int value.
+/** Set a parameter to a int value
  *
  * sqlite3_bind_int()
  */
 template<>
 void statement::bind<int>(int idx, int value);
 
-/** Set the parameter to a int64_t value
+/** Set a parameter to a int64_t value
  *
  * sqlite3_bind_int64()
  */
 template<>
 void statement::bind<int64_t>(int idx, int64_t value);
 
-/** Set the parameter to a double value
+/** Set a parameter to a double value
  *
  * sqlite3_bind_double()
  */
 template<>
 void statement::bind<double>(int idx, double value);
 
-/** Set the parameter to a const char* value.
+/** Set a parameter to a const char* value.
  *
  * With copy=false, tells sqlite to not make an internal copy of the value.
  * This means that the value passed in has to stay available until
@@ -603,7 +604,7 @@ inline void statement::bind<std::string>(int idx, const std::string &value, bool
 	bind<const char*>(idx, value.c_str(), copy);
 }
 
-/** Set the parameter to a blob.
+/** Set a parameter to a blob.
  *
  * If the data pointer of the blob is a null pointer,
  * it creates a blob consisting of zeroes.

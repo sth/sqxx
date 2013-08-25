@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(result) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items where id = 1");
 	st.run();
-	BOOST_CHECK(!st.eof());
+	BOOST_CHECK(!st.done());
 	BOOST_CHECK_EQUAL(st.col_count(), 1);
 }
 
@@ -120,14 +120,14 @@ BOOST_AUTO_TEST_CASE(statement_param_bind) {
 	sqxx::statement st = ctx.conn.prepare("select id from types where s = ?");
 	st.bind(0, "abc");
 	st.run();
-	BOOST_CHECK(!st.eof());
+	BOOST_CHECK(!st.done());
 	BOOST_CHECK_EQUAL(st.val<int>(0), 1);
 
 	st.reset();
 	st.clear_bindings();
 	st.bind(0, "xyz");
 	st.run();
-	BOOST_CHECK(st.eof());
+	BOOST_CHECK(st.done());
 }
 
 BOOST_AUTO_TEST_CASE(commit_handler) {
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(authorize_handler) {
 	auto st = ctx.conn.prepare("select id, v from items where id = 1");
 	BOOST_CHECK(called);
 	st.run();
-	BOOST_CHECK(!st.eof());
+	BOOST_CHECK(!st.done());
 	BOOST_CHECK_EQUAL(st.val<int>(0), 1);
 	//BOOST_CHECK_EQUAL(static_cast<const void*>(res.col(1).val<const char*>()), static_cast<const void*>(nullptr));
 }
