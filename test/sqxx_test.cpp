@@ -1,5 +1,6 @@
 
 #include "sqxx.hpp"
+#include "func.hpp"
 
 #include <boost/test/unit_test.hpp>
 
@@ -7,11 +8,13 @@ BOOST_AUTO_TEST_SUITE(sqxx_cn)
 
 struct db {
 	sqxx::connection conn;
+	// Create an in-memory database
 	db() : conn(":memory:") {
 	}
 };
 
 struct tab : db {
+	// Create an in-memory database and set up some test tables
 	tab() : db() {
 		conn.exec("create table items (id integer, v integer)");
 		conn.exec("insert into items (id, v) values (1, 11), (2, 22), (3, 33)");
@@ -240,6 +243,21 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 
 	BOOST_CHECK_EQUAL(data.size(), 1);
 	BOOST_CHECK_EQUAL(data[0], 1);
+}
+
+BOOST_AUTO_TEST_CASE(create_function) {
+	tab ctx;
+	bool called = false;
+	std::string sql = "select plusfive(v) from items where id = 1";
+	ctx.conn.create_function("plusfive", std::function<int (int)>([&](int i) {
+		called = true;
+		BOOST_CHECK_EQUAL(i, 11);
+		return i+5;
+	}));
+	auto st = ctx.conn.exec(sql);
+	BOOST_CHECK_EQUAL(st.val<int>(0), 16);
+
+	BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

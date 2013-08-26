@@ -642,13 +642,13 @@ void statement::bind<const char*>(int idx, const char *value, bool copy) {
 
 template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy) {
-	if (value.first) {
-		int rv = sqlite3_bind_blob(handle, idx+1, value.first, value.second, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	if (value.data) {
+		int rv = sqlite3_bind_blob(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
 	else {
-		int rv = sqlite3_bind_zeroblob(handle, idx+1, value.second);
+		int rv = sqlite3_bind_zeroblob(handle, idx+1, value.length);
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
@@ -773,8 +773,8 @@ template<>
 blob column_base::val<blob>() const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const void *data = sqlite3_column_blob(stmt.raw(), idx);
-	int len = sqlite3_column_bytes(stmt.raw(), idx);
-	return std::make_pair(data, len);
+	int bytes = sqlite3_column_bytes(stmt.raw(), idx);
+	return blob(data, bytes);
 }
 
 
@@ -816,6 +816,7 @@ std::pair<int, int> status(int op, bool reset) {
 		throw static_error(rv);
 	return std::make_pair(cur, hi);
 }
+
 
 namespace {
 	lib_setup setup;

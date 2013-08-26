@@ -1,9 +1,10 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(SQXX_INCLUDED)
-#define SQXX_INCLUDED
+#if !defined(SQXX_SQXX_HPP_INCLUDED)
+#define SQXX_SQXX_HPP_INCLUDED
 
+#include "datatypes.hpp"
 #include <string>
 #include <stdexcept>
 #include <vector>
@@ -33,73 +34,6 @@ std::pair<int, int> status(int op, bool reset=false);
 
 
 // TODO: blob_iterator?
-
-typedef std::pair<const void*, int> blob;
-
-inline blob make_blob(const void *data, int len) {
-	return std::make_pair(data, len);
-}
-
-// TODO: Decide if this is really a good idea
-/*
-template<typename T>
-inline blob make_blob(const std::vector<T> &data) {
-	return vector_blob(data);
-}
-
-template<typename T>
-typename std::enable_if<
-	std::is_pod<T>::value,
-	std::vector<T>
->::type blob_vector(const blob &b) {
-	const T *begin = reinterpret_cast<const T*>(b.first);
-	const T *end = begin + (b.second / sizeof(T));
-	return std::vector<T>(begin, end);
-}
-
-template<typename T>
-typename std::enable_if<
-	std::is_pod<T>::value,
-	blob
->::type vector_blob(const std::vector<T> &v) {
-	return std::make_pair(v.data(), v.size() * sizeof(T));
-}
-*/
-
-/*
-template<typename T>
-typename std::enable_if<std::is_pod<T>::value, std::vector<T>>::type to_vector(const blob &b) {
-	const T *begin = reinterpret_cast<const T*>(b.first);
-	const T *end = begin + (b.second / sizeof(T));
-	return std::vector<T>(begin, end);
-}
-*/
-
-namespace detail {
-
-// Check if type T is any of the other ones listed in Ts...
-template<typename T, typename... Ts>
-struct is_selected {
-	static const bool value = false;
-};
-
-template<typename T, typename T2, typename... Ts>
-struct is_selected<T, T2, Ts...> {
-	static const bool value = std::is_same<T, T2>::value || is_selected<T, Ts...>::value;
-};
-
-}
-
-/** `std::enable_if<>` for all types in the `Ts...` list */
-template<typename T, typename R, typename... Ts>
-using if_selected_type = typename std::enable_if<detail::is_selected<T, Ts...>::value, R>::type;
-
-/** `std::enable_if<>` for the types supported by sqxx's db interface
- * (`int`, `int64_t`, `double`, `const char*`, `std::string`, `blob`)
- */
-template<typename T, typename R>
-using if_sqxx_db_type = if_selected_type<T, R,
-		int, int64_t, double, const char*, std::string, blob>;
 
 
 class statement;
@@ -224,6 +158,10 @@ struct column_metadata {
 
 //class query;
 
+namespace detail {
+	struct function_data;
+}
+
 /** A database connection */
 class connection {
 private:
@@ -344,12 +282,27 @@ public:
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
 
-	/** Define a SQL function, automatically deduce the number of arguments */
+private:
+	void create_function_p(const char *name, detail::function_data *fundata);
+
+public:
+	/*
 	template<typename Callable>
-	void create_function(const char *name, Callable f);
-	/** Define a SQL function with the given number of arguments. Use if automatic deduction fails. */
-	template<int NArgs, typename Callable>
-	void create_function_n(const char *name, Callable f);
+	void create_function(const char *name, Callable &fun) {
+		auto stdfun = std::function(fun);
+		create_function(name, stdfun);
+	}
+	*/
+
+	template<typename R, typename... Ps>
+	void create_function(const char *name, const std::function<R (Ps...)> &fun);
+
+	///** Define a SQL function, automatically deduce the number of arguments */
+	//template<typename Callable>
+	//void create_function(const char *name, Callable f);
+	///** Define a SQL function with the given number of arguments. Use if automatic deduction fails. */
+	//template<int NArgs, typename Callable>
+	//void create_function_n(const char *name, Callable f);
 	/** Define a SQL function with variable number of arguments. The Callable will be
 	 * called with a single parameter, a std::vector<sqxx::value>.
 	 */
@@ -484,6 +437,9 @@ public:
 	if_selected_type<T, void, std::string, blob>
 	bind(const std::string &name, const T &value, bool copy=true) { bind<T>(name.c_str(), value, copy); }
 
+	/** sqlite3_clear_bindings() */
+	void clear_bindings();
+
 
 	// Result columns
 
@@ -498,6 +454,7 @@ public:
 		return column<T>(*this, idx);
 	}
 
+	// TODO: Move value access code from `column` to here
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) {
 		return column<T>(*this, idx).val();
@@ -513,14 +470,8 @@ public:
 	/** Advance to next result row */
 	void next_row();
 
-	//column col(const char *name);
-
-	//int changes();
-
 	/** sqlite3_reset() */
 	void reset();
-	/** sqlite3_clear_bindings() */
-	void clear_bindings();
 
 	// Result row access
 
@@ -565,14 +516,14 @@ public:
 };
 
 
-/** Set a parameter to a int value
+/** Set a parameter to an int value
  *
  * sqlite3_bind_int()
  */
 template<>
 void statement::bind<int>(int idx, int value);
 
-/** Set a parameter to a int64_t value
+/** Set a parameter to an int64_t value
  *
  * sqlite3_bind_int64()
  */
@@ -629,6 +580,7 @@ template<typename T>
 if_selected_type<T, void, std::string, blob>
 parameter::bind(const T &value, bool copy) { stmt.bind<T>(idx, value, copy); }
 
+
 // Handle exceptions thrown from C++ callbacks
 typedef std::function<void (const char*, std::exception_ptr)> callback_exception_handler_t;
 void set_callback_exception_handler(const callback_exception_handler_t &handler);
@@ -638,5 +590,5 @@ void default_callback_exception_handler(const char *cbname, std::exception_ptr e
 
 } // namespace sqxx
 
-#endif // SQXX_INCLUDED
+#endif // SQXX_SQXX_HPP_INCLUDED
 
