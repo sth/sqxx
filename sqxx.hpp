@@ -29,10 +29,6 @@ public:
 
 
 
-/** sqlite3_status() */
-std::pair<int, int> status(int op, bool reset=false);
-
-
 // TODO: blob_iterator?
 
 
@@ -75,12 +71,12 @@ public:
 
 /** A column of a sql query result */
 
-class column_base {
+class column {
 public:
 	statement &stmt;
 	const int idx;
 
-	column_base(statement &a_stmt, int a_idx);
+	column(statement &a_stmt, int a_idx);
 
 	/** sqlite3_column_name() */
 	const char* name() const;
@@ -102,46 +98,23 @@ public:
 };
 
 /** sqlite3_column_int() */
-template<> int column_base::val<int>() const;
+template<> int column::val<int>() const;
 
 /** sqlite3_column_int64() */
-template<> int64_t column_base::val<int64_t>() const;
+template<> int64_t column::val<int64_t>() const;
 
 /** sqlite3_column_double() */
-template<> double column_base::val<double>() const;
+template<> double column::val<double>() const;
 
 /** sqlite3_column_text() */
-template<> const char* column_base::val<const char*>() const;
-template<> inline std::string column_base::val<std::string>() const {
+template<> const char* column::val<const char*>() const;
+template<> inline std::string column::val<std::string>() const {
 	return val<const char*>();
 }
 
 /** sqlite3_column_blob() */
-template<> blob column_base::val<blob>() const;
+template<> blob column::val<blob>() const;
 
-
-template<typename T>
-class column : public column_base {
-public:
-	//using column_base::column;
-	template <typename... Args>
-	column(Args&&... args) : column_base(std::forward<Args>(args)...) {
-	}
-
-	using column_base::val;
-
-	T val() const { return val<T>(); }
-	operator T() const { return val(); }
-};
-
-template<>
-class column<void> : public column_base {
-public:
-	//using column_base::column;
-	template <typename... Args>
-	column(Args&&... args) : column_base(std::forward<Args>(args)...) {
-	}
-};
 
 namespace detail {
 	struct callback_table;
@@ -286,13 +259,8 @@ private:
 	void create_function_p(const char *name, detail::function_data *fundata);
 
 public:
-	/*
-	template<typename Callable>
-	void create_function(const char *name, Callable &fun) {
-		auto stdfun = std::function(fun);
-		create_function(name, stdfun);
-	}
-	*/
+	//template<typename Callable>
+	//void create_function(const char *name, Callable &fun);
 
 	template<typename R, typename... Ps>
 	void create_function(const char *name, const std::function<R (Ps...)> &fun);
@@ -446,18 +414,13 @@ public:
 	/** sqlite3_column_count() */
 	int col_count() const;
 
-	column<void> col(int idx);
+	column col(int idx);
 	//column<void> col(const char* idx);
-
-	template<typename T>
-	if_sqxx_db_type<T, column<T>> col(int idx) {
-		return column<T>(*this, idx);
-	}
 
 	// TODO: Move value access code from `column` to here
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) {
-		return column<T>(*this, idx).val();
+		return column(*this, idx).val<T>();
 	}
 
 
@@ -579,6 +542,10 @@ parameter::bind(T value, bool copy) { stmt.bind<T>(idx, value, copy); }
 template<typename T>
 if_selected_type<T, void, std::string, blob>
 parameter::bind(const T &value, bool copy) { stmt.bind<T>(idx, value, copy); }
+
+
+/** sqlite3_status() */
+std::pair<int, int> status(int op, bool reset=false);
 
 
 // Handle exceptions thrown from C++ callbacks
