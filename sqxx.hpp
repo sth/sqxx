@@ -95,7 +95,9 @@ public:
 
 
 namespace detail {
+	// Helpers for user defined callbacks/sql functions
 	struct callback_table;
+	struct function_data;
 }
 
 /** Metadata for a table column */
@@ -107,11 +109,6 @@ struct column_metadata {
 	bool autoinc;
 };
 
-//class query;
-
-namespace detail {
-	struct function_data;
-}
 
 /** A database connection */
 class connection {
@@ -138,39 +135,52 @@ public:
 	/** sqlite3_db_filename() */
 	const char* filename(const char *db = "main") const;
 	const char* filename(const std::string &db) const { return filename(db.c_str()); }
+
 	/** sqlite3_db_readonly() */
 	bool readonly(const char *dbname = "main") const;
 	bool readonly(const std::string &dbname) const { return readonly(dbname.c_str()); }
+
 	/** sqlite3_db_status() */
 	std::pair<int, int> status(int op, bool reset=false);
+
 	/** sqlite3_table_column_metadata() */
 	column_metadata metadata(const char *db, const char *table, const char *column) const;
+
 	/** sqlite3_total_changes() */
 	int total_changes() const;
 
+	/** sqlite3_open_v2() */
 	void open(const char *filename, int flags = 0);
 	void open(const std::string &filename, int flags = 0) { open(filename.c_str(), flags); }
+
+	/** sqlite3_close_v2() */
 	void close() noexcept;
+	/** sqlite3_close() */
 	void close_sync();
 
+	/** sqlite3_create_collation_v2() */
 	typedef std::function<int (int, const char*, int, const char*)> collation_function_t;
 	void create_collation(const char *name, const collation_function_t &coll);
+
+	//typedef std::function<int (const std::string &, const std::string &)> collation_str_function_t;
+	//void create_collation(const char *name, const collation_str_function_t &coll);
 
 	/** Create a sql prepared statement
 	 *
 	 * sqlite3_prepare_v2()
 	 */
 	statement prepare(const char *sql);
+	statement prepare(const std::string &sql);
 
 	/** Execute sql
 	 *
-	 * Like sqlite3_exec(), but returns a `statement` in case you are interested
+	 * Returns a `statement` in case you are interested
 	 * in the results returned by the query.
 	 *
 	 * If you are not interested in it, just ignore the return value.
 	 */
-	statement exec(const char *sql);
-	statement exec(const std::string &sql);
+	statement run(const char *sql);
+	statement run(const std::string &sql);
 
 	/*
 	template<typename T>
@@ -392,12 +402,13 @@ public:
 	/** sqlite3_column_count() */
 	int col_count() const;
 
+	/** Get a column object */
 	column col(int idx);
-	//column<void> col(const char* idx);
 
 	/** Access the value of a column in the current result row. */
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) const;
+
 
 	// Statement execution
 	/** sqlite3_step() */
@@ -441,6 +452,7 @@ public:
 	row_iterator begin() { return row_iterator(this); }
 	row_iterator end() { return row_iterator(); }
 
+	/** sqlite3_changes() */
 	int changes() const;
 
 	/** sqlite3_sql() */
@@ -450,7 +462,7 @@ public:
 	int status(int op, bool reset=false);
 
 	/** Raw access to the underlying `sqlite3_stmt*` handle */
-	sqlite3_stmt* raw() { return handle; }
+	sqlite3_stmt* raw() const { return handle; }
 };
 
 

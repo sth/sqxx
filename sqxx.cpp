@@ -214,7 +214,7 @@ void sqxx_call_collation_destroy(void *data) {
 	delete fun;
 }
 
-void connection::create_collation(const char *name, const connection::collation_function_t &coll) {
+void connection::create_collation(const char *name, const collation_function_t &coll) {
 	typedef connection::collation_function_t cf_t;
 	int rv;
 	if (coll) {
@@ -231,6 +231,16 @@ void connection::create_collation(const char *name, const connection::collation_
 			throw static_error(rv);
 	}
 }
+
+/*
+void connection::create_collation(const char *name, const collation_str_function_t &coll) {
+	// TODO: in the lambda, coll is a copy of the function or only a copy of the reference?
+	create_collation(name, collation_function_t([coll](int llen, const char *lstr, int rlen, const char *rstr) -> int {
+		return coll(std::string(lstr, llen), std::string(rstr, rlen));
+	}));
+}
+*/
+
 
 /*
 struct exec_context {
@@ -275,14 +285,14 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 }
 */
 
-statement connection::exec(const char *sql) {
+statement connection::run(const char *sql) {
 	statement st = prepare(sql);
 	st.run();
 	return st;
 }
 
-statement connection::exec(const std::string &sql) {
-	return exec(sql.c_str());
+statement connection::run(const std::string &sql) {
+	return run(sql.c_str());
 }
 
 statement connection::prepare(const char *sql) {
@@ -295,6 +305,10 @@ statement connection::prepare(const char *sql) {
 	}
 
 	return statement(*this, stmt);
+}
+
+statement connection::prepare(const std::string &sql) {
+	return prepare(sql.c_str());
 }
 
 void connection::interrupt() {
