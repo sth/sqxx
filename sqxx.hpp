@@ -17,7 +17,7 @@ struct sqlite3_stmt;
 
 namespace sqxx {
 
-/** A error thrown if some sqlite API function returns an error */
+/** An error thrown if some sqlite API function returns an error */
 class error : public std::runtime_error {
 public:
 	int code;
@@ -26,10 +26,6 @@ public:
 	error(int code_arg, const std::string &what_arg) : std::runtime_error(what_arg), code(code_arg) {
 	}
 };
-
-
-
-// TODO: blob_iterator?
 
 
 class statement;
@@ -96,24 +92,6 @@ public:
 	template<typename T>
 	if_sqxx_db_type<T, T> val() const;
 };
-
-/** sqlite3_column_int() */
-template<> int column::val<int>() const;
-
-/** sqlite3_column_int64() */
-template<> int64_t column::val<int64_t>() const;
-
-/** sqlite3_column_double() */
-template<> double column::val<double>() const;
-
-/** sqlite3_column_text() */
-template<> const char* column::val<const char*>() const;
-template<> inline std::string column::val<std::string>() const {
-	return val<const char*>();
-}
-
-/** sqlite3_column_blob() */
-template<> blob column::val<blob>() const;
 
 
 namespace detail {
@@ -417,12 +395,9 @@ public:
 	column col(int idx);
 	//column<void> col(const char* idx);
 
-	// TODO: Move value access code from `column` to here
+	/** Access the value of a column in the current result row. */
 	template<typename T>
-	if_sqxx_db_type<T, T> val(int idx) {
-		return column(*this, idx).val<T>();
-	}
-
+	if_sqxx_db_type<T, T> val(int idx) const;
 
 	// Statement execution
 	/** sqlite3_step() */
@@ -529,6 +504,34 @@ inline void statement::bind<std::string>(int idx, const std::string &value, bool
 template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy);
 
+
+/** sqlite3_column_int() */
+template<>
+int statement::val<int>(int idx) const;
+
+/** sqlite3_column_int64() */
+template<>
+int64_t statement::val<int64_t>(int idx) const;
+
+/** sqlite3_column_double() */
+template<>
+double statement::val<double>(int idx) const;
+
+/** sqlite3_column_text() */
+template<>
+const char* statement::val<const char*>(int idx) const;
+
+template<>
+inline std::string statement::val<std::string>(int idx) const {
+	return val<const char*>(idx);
+}
+
+/** sqlite3_column_blob() */
+template<>
+blob statement::val<blob>(int idx) const;
+
+
+
 inline void parameter::bind() { stmt.bind(idx); }
 
 template<typename T>
@@ -543,6 +546,10 @@ template<typename T>
 if_selected_type<T, void, std::string, blob>
 parameter::bind(const T &value, bool copy) { stmt.bind<T>(idx, value, copy); }
 
+template<typename T>
+if_sqxx_db_type<T, T> column::val() const {
+	return stmt.val<T>(idx);
+}
 
 /** sqlite3_status() */
 std::pair<int, int> status(int op, bool reset=false);

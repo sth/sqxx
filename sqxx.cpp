@@ -663,6 +663,36 @@ column statement::col(int idx) {
 	return column(*this, idx);
 }
 
+template<>
+int statement::val<int>(int idx) const {
+	return sqlite3_column_int(handle, idx);
+}
+
+template<>
+int64_t statement::val<int64_t>(int idx) const {
+	return sqlite3_column_int64(handle, idx);
+}
+
+template<>
+double statement::val<double>(int idx) const {
+	return sqlite3_column_double(handle, idx);
+}
+
+template<>
+const char* statement::val<const char*>(int idx) const {
+	// cast necessary because api fucntion returns `const unsigned char*`
+	return reinterpret_cast<const char*>(sqlite3_column_text(handle, idx));
+}
+
+template<>
+blob statement::val<blob>(int idx) const {
+	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
+	const void *data = sqlite3_column_blob(handle, idx);
+	int bytes = sqlite3_column_bytes(handle, idx);
+	return blob(data, bytes);
+}
+
+
 void statement::step() {
 	int rv;
 
@@ -747,35 +777,6 @@ int column::type() const {
 
 const char* column::decl_type() const {
 	return sqlite3_column_decltype(stmt.raw(), idx);
-}
-
-template<>
-int column::val<int>() const {
-	return sqlite3_column_int(stmt.raw(), idx);
-}
-
-template<>
-int64_t column::val<int64_t>() const {
-	return sqlite3_column_int64(stmt.raw(), idx);
-}
-
-template<>
-double column::val<double>() const {
-	return sqlite3_column_double(stmt.raw(), idx);
-}
-
-template<>
-const char* column::val<const char*>() const {
-	// cast necessary because api fucntion returns `const unsigned char*`
-	return reinterpret_cast<const char*>(sqlite3_column_text(stmt.raw(), idx));
-}
-
-template<>
-blob column::val<blob>() const {
-	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
-	const void *data = sqlite3_column_blob(stmt.raw(), idx);
-	int bytes = sqlite3_column_bytes(stmt.raw(), idx);
-	return blob(data, bytes);
 }
 
 
