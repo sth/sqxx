@@ -9,7 +9,7 @@ try:
 	import buildsys
 	buildsys.setup(env)
 	env.BConfigure()
-	env.BRequire('callable')
+	#env.BRequire('callable')
 except ImportError:
 	env.Append(
 			CPPPATH = ['../callable']

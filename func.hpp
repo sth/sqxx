@@ -55,6 +55,7 @@ const char* value::val<const char*>() const;
 template<>
 blob value::val<blob>() const;
 
+
 class context {
 private:
 	sqlite3_context *handle;
@@ -71,11 +72,15 @@ public:
 	void result_error_toobig();
 
 	template<typename R>
-	void result(R value);
+	if_sqxx_db_type<R, void>
+	result(R value);
+
 	/*
 	template<typename R>
 	void result(std::optional<R> value);
 	*/
+
+	sqlite3_context* raw();
 };
 
 /** sqlite3_result_int() */
@@ -147,14 +152,13 @@ struct function_data {
 	virtual ~function_data() {
 	}
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) = 0;
-
 };
 
-template<size_t NArgs, typename R, typename Fun>
+template<size_t NArgs, typename R, typename... Ps>
 struct function_data_t : function_data {
-	Fun fun;
+	std::function<R (Ps...)> fun;
 
-	function_data_t(const Fun &fun_arg) : function_data(NArgs), fun(fun_arg) {
+	function_data_t(const std::function<R (Ps...)> &fun_arg) : function_data(NArgs), fun(fun_arg) {
 	}
 
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
@@ -162,7 +166,7 @@ struct function_data_t : function_data {
 			ctx.result_misuse();
 		}
 		else {
-			ctx.result(apply_value_array<NArgs, R>(fun, argv));
+			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
 		}
 	}
 };
@@ -172,7 +176,7 @@ struct function_data_t : function_data {
 template<typename R, typename... Ps>
 void connection::create_function(const char *name, const std::function<R (Ps...)> &fun) {
 	static const size_t NArgs = detail::type_count<Ps...>::value;
-	create_function_p(name, new detail::function_data_t<NArgs, R, std::function<R (Ps...)>>(fun));
+	create_function_p(name, new detail::function_data_t<NArgs, R, Ps...>(fun));
 }
 
 } // namespace sqxx

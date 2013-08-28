@@ -7,7 +7,6 @@
 #include <string>
 #include <functional>
 #include <sqlite3.h>
-#include "callable.hpp"
 #include "detail.hpp"
 
 
@@ -66,6 +65,10 @@ void context::result_error_code(int code) {
 template<>
 void context::result<int>(int value) {
 	sqlite3_result_int(handle, value);
+}
+
+sqlite3_context* context::raw() {
+	return handle;
 }
 
 extern "C"
