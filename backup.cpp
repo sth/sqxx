@@ -1,4 +1,6 @@
 
+// (c) 2013 Stephan Hohe
+
 #include "backup.hpp"
 #include "detail.hpp"
 #include <sqlite3.h>

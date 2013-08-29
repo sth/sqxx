@@ -16,6 +16,10 @@ except ImportError:
 		)
 
 src = Split('''
+	parameter.cpp
+	column.cpp
+	statement.cpp
+	connection.cpp
 	sqxx.cpp
 	blob.cpp
 	backup.cpp
