@@ -146,9 +146,6 @@ R apply_value_array(Fun f, sqlite3_value **argv) {
 }
 
 struct function_data {
-	int nargs;
-	function_data(int nargs_arg) : nargs(nargs_arg) {
-	}
 	virtual ~function_data() {
 	}
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) = 0;
@@ -158,7 +155,7 @@ template<size_t NArgs, typename R, typename... Ps>
 struct function_data_t : function_data {
 	std::function<R (Ps...)> fun;
 
-	function_data_t(const std::function<R (Ps...)> &fun_arg) : function_data(NArgs), fun(fun_arg) {
+	function_data_t(const std::function<R (Ps...)> &fun_arg) : fun(fun_arg) {
 	}
 
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
@@ -171,12 +168,12 @@ struct function_data_t : function_data {
 	}
 };
 
-} // namepspace detail
+} // namespace detail
 
 template<typename R, typename... Ps>
 void connection::create_function(const char *name, const std::function<R (Ps...)> &fun) {
 	static const size_t NArgs = detail::type_count<Ps...>::value;
-	create_function_p(name, new detail::function_data_t<NArgs, R, Ps...>(fun));
+	create_function_p(name, NArgs, new detail::function_data_t<NArgs, R, Ps...>(fun));
 }
 
 } // namespace sqxx

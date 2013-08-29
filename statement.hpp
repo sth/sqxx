@@ -4,13 +4,14 @@
 #if !defined(SQXX_STATEMENT_HPP_INCLUDED)
 #define SQXX_STATEMENT_HPP_INCLUDED
 
-#include "connection.hpp"
+#include "datatypes.hpp"
 
 // struct from <sqlite3.h>
 struct sqlite3_stmt;
 
 namespace sqxx {
 
+class connection;
 class parameter;
 class column;
 

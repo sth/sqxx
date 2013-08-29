@@ -98,9 +98,9 @@ void sqxx_function_destroy(void *data) {
 	delete d;
 }
 
-void connection::create_function_p(const char *name, detail::function_data *fdat) {
+void connection::create_function_p(const char *name, int nargs, detail::function_data *fdat) {
 	int rv;
-	rv = sqlite3_create_function_v2(handle, name, fdat->nargs, SQLITE_UTF8, fdat,
+	rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, fdat,
 			sqxx_function_call, nullptr, nullptr, sqxx_function_destroy);
 	if (rv != SQLITE_OK) {
 		delete fdat;

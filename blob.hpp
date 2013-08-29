@@ -1,8 +1,8 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(SQXX_BLOB_INCLUDED_HPP)
-#define SQXX_BLOB_INCLUDED_HPP
+#if !defined(SQXX_BLOB_HPP_INCLUDED)
+#define SQXX_BLOB_HPP_INCLUDED
 
 #include <iosfwd>
 #include <boost/iostreams/traits.hpp>
@@ -41,5 +41,5 @@ public:
 
 } // namespace sqxx
 
-#endif // SQXX_BLOB_INCLUDED_HPP
+#endif // SQXX_BLOB_HPP_INCLUDED
 

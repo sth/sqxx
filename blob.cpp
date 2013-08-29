@@ -14,6 +14,7 @@ blob_source::blob_source(sqlite3_blob *handle_arg)
 
 std::streamsize blob_source::read(char *s, std::streamsize n) {
 	int rv;
+	// TODO: throw or fail() on too large n?!
 	n = std::min(n, static_cast<std::streamsize>(std::numeric_limits<int>::max()));
 	int limit = std::min(static_cast<int>(n), len-pos);
 	rv = sqlite3_blob_read(handle, s, limit, pos);

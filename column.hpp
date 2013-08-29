@@ -5,10 +5,9 @@
 #define SQXX_COLUMN_HPP_INCLUDED
 
 #include "datatypes.hpp"
+#include "statement.hpp"
 
 namespace sqxx {
-
-class statement;
 
 /** A column of a sql query result */
 
@@ -37,13 +36,6 @@ public:
 	template<typename T>
 	if_sqxx_db_type<T, T> val() const;
 };
-
-} // namespace sqxx
-
-
-#include "statement.hpp"
-
-namespace sqxx {
 
 template<typename T>
 if_sqxx_db_type<T, T> column::val() const {

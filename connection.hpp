@@ -12,6 +12,7 @@ struct sqlite3;
 
 namespace sqxx {
 
+class statement;
 namespace detail {
 	// Helpers for user defined callbacks/sql functions
 	struct callback_table;
@@ -26,8 +27,6 @@ struct column_metadata {
 	bool primarykey;
 	bool autoinc;
 };
-
-class statement;
 
 /** A database connection */
 class connection {
@@ -163,7 +162,7 @@ public:
 	void set_collation_handler();
 
 private:
-	void create_function_p(const char *name, detail::function_data *fundata);
+	void create_function_p(const char *name, int nargs, detail::function_data *fundata);
 
 public:
 	//template<typename Callable>
