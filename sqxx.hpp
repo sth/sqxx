@@ -5,7 +5,6 @@
 #define SQXX_SQXX_HPP_INCLUDED
 
 #include "datatypes.hpp"
-#include <string>
 #include <stdexcept>
 #include <vector>
 #include <memory>

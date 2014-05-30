@@ -10,7 +10,7 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
 - Contains methods corresponding directly to the C API functions, so if you are familiar
   with the C API, that knowledge should translate directly.
 - Contains support for advanced features like registering callbacks, collation functions
-  of custom SQL functions, fully in C++. For example a lambda functions can be registered
+  or custom SQL functions, fully in C++. For example a lambda functions can be registered
   as a custom SQL function and then be called in SQL queries.
 
 ## Getting started
@@ -22,41 +22,69 @@ connection, and `sqxx::statement`, which represents a SQL statement including
 binding of parameters, executing the statement, and accessing the results of
 the execution.
 
-### Common usage
+### Quick overview
 
-Untested at the moment and subject to change if something turns out to be a bad
-idea.
+<#include "example.cpp">
 
-    // opening a database
-    sqxx::connection conn("example.db");
+### Api
 
-    // simple statement execution
+#### Creating a database connection
+
+The constructor of `sqxx::connection` takes the database name as a parameter:
+
+    sqxx::connection conn("/path/to/dbfile");
+
+Alternatively, you can also use the detault constructor to create the object
+and then later open a database with the `open()` method:
+
+    sqxx::connection conn;
+    conn.open("/path/to/dbfile");
+
+To create a temporary in-memory database, use the special string `":memory:` as
+a database file name. For more details, also see the documentation of the wrapped
+C API function.
+
+#### Executing queries
+
+The most common use for such a connection object is to execute SQL queries with
+`exec()`:
+
     conn.exec("create table items (id integer, v integer)");
     conn.exec("insert into items (id, value) values (1, 11), (2, 22), (3, 33)");
 
-    // getting results
-    sqxx::statement s1 = conn.exec("select * from items where id = 1");
-    std::cout << "id=" << s1.val<int>(0) << " value=" << s1.val<int>(1) << std::endl;
+The exec() method returns a `sqxx::statement` that can be used to access the
+results of a query:
 
-    // iterating over multiple result rows
-    sqxx::statement s2 = conn.exec("select * from items where id = 1");
-    for (auto &r : s2) {
-       std::cout << r.val<int>(1) << std::endl;
-    }
+	 sqxx::statement st = conn.exec("select * from items where id = 1");
 
-    // Prepared statements
-    sqxx::statement s3 = conn.prepare("select value from items where id = ?");
-    s3.param(0).bind_int(2);
-    s3.run();
-    std::cout << "id=2 value=" << s3.val<int>(0) << std::endl;
+# Accessing result values
 
-    //s3.reset();
-	 //s3.clear_bindings();
-    //s3.param(0) = 3;
-    //s3.run();
-    //int v = s3.col(0);
-    //std::cout << "id=3 value=" << v << std::endl;
+Results are accessed one row after another. The values of in the current row
+are usually accessed with the `val()` method. This is a template that takes
+one type parameter, specifying to which type the database value should be
+converted. It's parameter is the column index that should be accessed:
 
+    // Get the value in column 0 as an int
+    int i = st.val<int>(0);
+
+    // Get the value in column 1 as a string
+    std::string s = st.val<std::string>(1);
+
+The type parameter must be one of the types supported by this sqxx, which are
+`int`, `int64_t`, `double`, `const char*`, `std::string` and `sqxx:blob`.
+These types map directly to the types supported by the underlying C API.
+
+Since the values in a sqlite3 database are stored without type information,
+every value can be accessed as any type. So `val<double>(0)`, will recieve the
+value as a double, even if it previously was stored as an int or string. The
+underlying sqlite3 C API will convert the value if neccessary.
+
+#### Accessing multiple result rows
+
+The result rows are accessed one after another,
+
+
+The statements `done()` method can be used to check if there are 
 
 ## Changed semantics compared to the C API
 

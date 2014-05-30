@@ -49,5 +49,18 @@ env_test.Command('runtest', 'sqxx_test', './sqxx_test')
 Alias('test', ['sqxx_test', 'runtest'])
 
 
+# examples
+
+env_examples = env.Clone()
+env_examples.Append(
+		CPPPATH = ['.'],
+		LIBS = ['sqlite3'],
+	)
+
+env_examples.Program('examples/usage', ['examples/usage.cpp', lib])
+
+Alias('examples', ['examples/usage'])
+
+
 Default(lib)
 
