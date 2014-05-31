@@ -111,15 +111,14 @@ BOOST_AUTO_TEST_CASE(statement_result_next) {
 BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select v from items order by id");
-	int i = 0;
 	st.run();
 	BOOST_CHECK_EQUAL(st.col_count(), 1);
-	for (auto& r : st) {
-		++i;
-		BOOST_CHECK(r);
-		BOOST_CHECK_EQUAL(r.col(0).val<int>(), 11*i);
+	size_t rowcount = 0;
+	for (auto i : st) {
+		BOOST_CHECK_EQUAL(st.col(0).val<int>(), 11*i);
+		rowcount = i+1;
 	}
-	BOOST_CHECK_EQUAL(i, 3);
+	BOOST_CHECK_EQUAL(rowcount, 3);
 }
 
 BOOST_AUTO_TEST_CASE(statement_param_bind) {
@@ -241,8 +240,8 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 	BOOST_CHECK(called);
 
 	std::vector<int> data;
-	for (auto &r : st) {
-		data.push_back(r.val<int>(0));
+	for (auto i : st) {
+		data.push_back(st.val<int>(0));
 	}
 
 	BOOST_CHECK_EQUAL(data.size(), 1);

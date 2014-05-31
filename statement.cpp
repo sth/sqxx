@@ -184,17 +184,19 @@ void statement::clear_bindings() {
 		throw static_error(rv);
 }
 
-statement::row_iterator::row_iterator(statement *s_arg) : s(s_arg) {
+statement::row_iterator::row_iterator(statement *s_arg) : s(s_arg), rowidx(0) {
 	check_complete();
 }
 
 void statement::row_iterator::check_complete() {
-	if (s && s->completed)
+	if (s && s->completed) {
 		s = nullptr;
+	}
 }
 
 statement::row_iterator& statement::row_iterator::operator++() {
 	s->step();
+	++rowidx;
 	check_complete();
 	return *this;
 }

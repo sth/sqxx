@@ -164,9 +164,11 @@ public:
 	bool done() const { return completed; }
 	operator bool() const { return !completed; }
 
-	class row_iterator : public std::iterator<std::input_iterator_tag, statement> {
+	// TODO: Return int rownumber instead when iterating? Might be less confusing.
+	class row_iterator : public std::iterator<std::input_iterator_tag, size_t> {
 	private:
 		statement *s;
+		size_t rowidx;
 
 	public:
 		explicit row_iterator(statement *a_s = nullptr);
@@ -175,13 +177,13 @@ public:
 		void check_complete();
 
 	public:
-		statement& operator*() const { return *s; }
+		size_t operator*() const { return rowidx; }
 
 		row_iterator& operator++();
-		// Not reasonably implementable with correct return:
+		// Not reasonably implementable with correct return type:
 		void operator++(int) { ++*this; }
 
-		bool operator==(const row_iterator &other) const { return (s == other.s); }
+		bool operator==(const row_iterator &other) const { return (s == other.s) && (rowidx == other.rowidx); }
 		bool operator!=(const row_iterator &other) const { return !(*this == other); }
 	};
 
