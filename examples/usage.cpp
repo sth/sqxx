@@ -8,15 +8,15 @@ int main() {
     sqxx::connection conn(":memory:", sqxx::OPEN_CREATE|sqxx::OPEN_READWRITE);
 
     // simple statement execution
-    conn.run("create table items (id integer, value integer);");
-    conn.run("insert into items (id, value) values (1, 11), (2, 22), (3, 33);");
+    conn.run("create table items (id integer, value integer)");
+    conn.run("insert into items (id, value) values (1, 11), (2, 22), (3, 33)");
 
 	 // getting results
 	 sqxx::statement s1 = conn.run("select * from items where id = 1");
 	 std::cout << "id=" << s1.val<int>(0) << " value=" << s1.val<int>(1) << std::endl;
 
-    // getting multiple result rows
-    sqxx::statement s2 = conn.run("select * from items;");
+    // getting multiple result rows, manual iteration
+    sqxx::statement s2 = conn.run("select * from items");
 	 while (!s2.done()) {
 		 std::cout << "id=" << s2.val<int>(0) << " value=" << s2.val<int>(1) << std::endl;
 		 s2.next_row();
@@ -24,8 +24,8 @@ int main() {
 
     // iterating over multiple result rows
     sqxx::statement s3 = conn.run("select * from items where id <= 2");
-    for (auto &r : s3) {
-		 std::cout << "row #" << "TODO" << ": id=" << s3.val<int>(0) << " value=" << s3.val<int>(1) << std::endl;
+    for (auto rownum : s3) {
+		 std::cout << "row #" << rownum << ": id=" << s3.val<int>(0) << " value=" << s3.val<int>(1) << std::endl;
     }
 
     // Prepared statements
@@ -36,7 +36,7 @@ int main() {
     s4.run();
     std::cout << "value=" << s4.val<int>(0) << std::endl;
 
-	 // ... reset and bind new parameters
+	 // ... reset query and bindings, bind new parameters
 	 s4.reset();
 	 s4.clear_bindings();
     s4.bind(0, "3");
