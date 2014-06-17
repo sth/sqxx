@@ -18,12 +18,14 @@ except ImportError:
 src = Split('''
 	parameter.cpp
 	column.cpp
+	context.cpp
 	statement.cpp
 	connection.cpp
 	sqxx.cpp
 	blob.cpp
 	backup.cpp
 	func.cpp
+	value.cpp
    ''')
 
 lib = env.Library('sqxx', src)
