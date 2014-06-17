@@ -26,6 +26,14 @@ int statement::status(int op, bool reset) {
 	return sqlite3_stmt_status(handle, op, static_cast<int>(reset));
 }
 
+bool statement::readonly() const {
+	return sqlite3_stmt_readonly(handle);
+}
+
+bool statement::busy() const {
+	return sqlite3_stmt_busy(handle);
+}
+
 int statement::param_index(const char *name) const {
 	int idx = sqlite3_bind_parameter_index(handle, name);
 	if (idx == 0)
@@ -128,7 +136,7 @@ double statement::val<double>(int idx) const {
 
 template<>
 const char* statement::val<const char*>(int idx) const {
-	// cast necessary because api fucntion returns `const unsigned char*`
+	// cast necessary because api function returns `const unsigned char*`
 	return reinterpret_cast<const char*>(sqlite3_column_text(handle, idx));
 }
 
@@ -196,13 +204,9 @@ void statement::row_iterator::check_complete() {
 
 statement::row_iterator& statement::row_iterator::operator++() {
 	s->step();
-	++rowidx;
 	check_complete();
+	++rowidx;
 	return *this;
-}
-
-int statement::changes() const {
-	return sqlite3_changes(conn.raw());
 }
 
 } // namespace sqxx

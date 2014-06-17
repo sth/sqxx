@@ -134,7 +134,7 @@ int connection::total_changes() const {
 void connection::open(const char *filename, int flags) {
 	int rv;
 	if (!flags)
-		flags = SQLITE_OPEN_READWRITE;
+		flags = OPEN_READWRITE;
 	rv = sqlite3_open_v2(filename, &handle, flags, nullptr);
 	if (rv != SQLITE_OK) {
 		if (handle)
@@ -212,7 +212,17 @@ void connection::create_collation(const char *name, const collation_function_t &
 }
 
 /*
-void connection::create_collation(const char *name, const collation_str_function_t &coll) {
+void connection::exec(const char *sql, const std::function<void (statement&)> &fun) {
+	statement st;
+	st.run(sql);
+	for (auto i : st) {
+		fun(st);
+	}
+}
+*/
+
+/*
+void connection::create_str_collation(const char *name, const collation_str_function_t &coll) {
 	// TODO: in the lambda, coll is a copy of the function or only a copy of the reference?
 	create_collation(name, collation_function_t([coll](int llen, const char *lstr, int rlen, const char *rstr) -> int {
 		return coll(std::string(lstr, llen), std::string(rstr, rlen));
@@ -306,6 +316,10 @@ void connection::release_memory() {
 void connection::setup_callbacks() {
 	if (!callbacks)
 		callbacks.reset(new detail::callback_table);
+}
+
+int connection::changes() const {
+	return sqlite3_changes(handle);
 }
 
 extern "C"

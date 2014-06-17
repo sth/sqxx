@@ -18,21 +18,26 @@ public:
 
 	column(statement &a_stmt, int a_idx);
 
-	/** sqlite3_column_name() */
+	/** Wraps [`sqlite3_column_name()`](http://www.sqlite.org/c3ref/column_name.html) */
 	const char* name() const;
-	/** sqlite3_column_database_name() */
+	/** Wraps [`sqlite3_column_database_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* database_name() const;
-	/** sqlite3_column_table_name() */
+	/** Wraps [`sqlite3_column_table_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* table_name() const;
-	/** sqlite3_column_origin_name() */
+	/** Wraps [`sqlite3_column_origin_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* origin_name() const;
 
-	/** sqlite3_column_type() */
+	/** Wraps [`sqlite3_column_type()`](http://www.sqlite.org/c3ref/column_blob.html) */
 	int type() const;
-	/** sqlite3_column_decltype() */
+	/** Wraps [`sqlite3_column_decltype()`](http://www.sqlite.org/c3ref/column_decltype.html) */
 	const char* decl_type() const;
 
-	/** Access the value of the column in the current result row. */
+	/**
+	 * Access the value of the column in the current result row.
+	 *
+	 * Same as `statement::val()` without the column parameter.
+	 * See there for details.
+	 */
 	template<typename T>
 	if_sqxx_db_type<T, T> val() const;
 };

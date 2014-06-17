@@ -20,18 +20,34 @@ private:
 public:
 	value(sqlite3_value *handle_arg);
 
+	/**
+	 * Checks if the value is NULL
+	 */
 	bool null() const;
 
+	/**
+	 * Access the value as a certain type
+	 *
+	 * Wraps [`sqlite3_value_*()`](http://www.sqlite.org/c3ref/value_blob.html)
+	 */
 	template<typename T>
 	if_sqxx_db_type<T, T>
 	val() const;
 
+	/**
+	 * Implicit vonversions for the contained value.
+	 *
+	 * Like `val<>()`.
+	 */
 	operator int() const;
 	operator int64_t() const;
 	operator double() const;
 	operator const char*() const;
 	operator blob() const;
 
+	/**
+	 * Access to the underlying raw `sqlite3_value*`
+	 */
 	sqlite3_value* raw();
 };
 
@@ -56,6 +72,7 @@ template<>
 blob value::val<blob>() const;
 
 
+/** Wraps `struct sqlite3_context` */
 class context {
 private:
 	sqlite3_context *handle;
@@ -64,13 +81,54 @@ public:
 	context(sqlite3_context *handle_arg) : handle(handle_arg) {
 	}
 
+	/**
+	 * Sets result to NULL:
+	 *
+	 * Wraps [`sqlite3_result_null()`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_null();
+	/**
+	 * Sets result to error SQLITE_MISUSE
+	 *
+	 * Wraps [`sqlite3_result_error_code(SQLITE_MISUSE)`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_misuse();
+	/**
+	 * Sets result to error with the given message
+	 *
+	 * Wraps [`sqlite3_result_error()`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_error(const char *msg);
+	/**
+	 * Sets result to error with the given error code
+	 *
+	 * Wraps [`sqlite3_result_error_code()`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_error_code(int code);
+	/**
+	 * Sets result to error "out of memory"
+	 *
+	 * Wraps [`sqlite3_result_error_nomem()`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_error_nomem();
+	/**
+	 * Sets result to error "too big"
+	 *
+	 * Wraps [`sqlite3_result_error_toobig()`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
 	void result_error_toobig();
 
+	/**
+	 * Sets result to given value
+	 *
+	 * Wraps
+	 * [`sqlite3_result_int()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * [`sqlite3_result_int64()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * [`sqlite3_result_double()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * [`sqlite3_result_text()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * [`sqlite3_result_blob()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * and [`sqlite3_result_zeroblob()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 */
 	template<typename R>
 	if_sqxx_db_type<R, void>
 	result(R value);
@@ -80,12 +138,17 @@ public:
 	void result(std::optional<R> value);
 	*/
 
+	/**
+	 * Returns a raw pointer to the underlying `struct sqlite3_context`.
+	 */
 	sqlite3_context* raw();
 };
 
 /** sqlite3_result_int() */
 template<>
 void context::result<int>(int value);
+
+// TODO: More specializations
 
 /*
 template<>
@@ -167,6 +230,24 @@ struct function_data_t : function_data {
 		}
 	}
 };
+
+template<size_t NArgs, typename Fun, typename R, typename... Ps>
+struct function_data_gen_t : function_data {
+	Fun fun;
+
+	function_data_gen_t(Fun fun_arg) : fun(std::forward<Fun>(fun_arg)) {
+	}
+
+	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
+		if (argc != NArgs) {
+			ctx.result_misuse();
+		}
+		else {
+			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
+		}
+	}
+};
+
 
 } // namespace detail
 

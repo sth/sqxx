@@ -22,6 +22,9 @@ class column;
  *
  * - Binding of parameters for prepared statements
  * - Accessing of result rows after executing the statement
+ *
+ * Wraps the C API struct `sqlite3_stmt` and associated functions.
+ *
  */
 class statement {
 private:
@@ -45,10 +48,20 @@ public:
 
 	// Parameters of prepared statements
 
-	/** sqlite3_bind_parameter_count() */
+	/**
+	 * Get count of parameters in prepared statement.
+	 *
+	 * Wraps [`sqlite3_bind_parameter_count()`](http://www.sqlite.org/c3ref/bind_parameter_count.html).
+	 */
 	int param_count() const;
 
-	/** sqlite3_bind_parameter_index() */
+	/**
+	 * Get index of a named parameter.
+	 *
+	 * Mostly used internally; use `param(name)` or `bind(name, value)` instead.
+	 *
+	 * [`sqlite3_bind_parameter_index()`]()
+	 */
 	int param_index(const char *name) const;
 	int param_index(const std::string &name) const { return param_index(name.c_str()); }
 
@@ -91,11 +104,22 @@ public:
 	 *
 	 */
 
-	/** Set a parameter to a SQL NULL value */
+	/**
+	 * Set a parameter to NULL.
+	 *
+	 * Wraps [`sqlite3_bind_null()`](http://www.sqlite.org/c3ref/bind_blob.html).
+	 */
 	void bind(int idx);
 	void bind(const char *name) { bind(param_index(name)); }
 	void bind(const std::string &name) { bind(name.c_str()); }
 
+	/**
+	 * Set a parameter to a `int`, `int64_t` or `double` value.
+	 *
+	 * Wraps [`sqlite3_bind_int()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 * [`sqlite3_bind_int64()`](http://www.sqlite.org/c3ref/bind_blob.html).
+	 * [`sqlite3_bind_double()`](http://www.sqlite.org/c3ref/bind_blob.html).
+	 */
 	template<typename T>
 	if_selected_type<T, void, int, int64_t, double>
 	bind(int idx, T value);
@@ -107,6 +131,11 @@ public:
 	if_selected_type<T, void, int, int64_t, double>
 	bind(const std::string &name, T value) { bind<T>(name.c_str(), value); }
 
+	/**
+	 * Set a parameter to a `const char*` value.
+	 *
+	 * Wraps [`sqlite3_bind_text()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 */
 	template<typename T>
 	if_selected_type<T, void, const char*>
 	bind(int idx, T value, bool copy=true);
@@ -118,6 +147,13 @@ public:
 	if_selected_type<T, void, const char*>
 	bind(const std::string &name, T value, bool copy=true) { bind<T>(name.c_str(), value, copy); }
 
+	/**
+	 * Set a parameter to a `std::string` or `blob` value.
+	 *
+	 * Wraps [`sqlite3_bind_text()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 * Wraps [`sqlite3_bind_blob()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 * Wraps [`sqlite3_bind_zeroblob()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 */
 	template<typename T>
 	if_selected_type<T, void, std::string, blob>
 	bind(int idx, const T &value, bool copy=true);
@@ -129,25 +165,39 @@ public:
 	if_selected_type<T, void, std::string, blob>
 	bind(const std::string &name, const T &value, bool copy=true) { bind<T>(name.c_str(), value, copy); }
 
-	/** sqlite3_clear_bindings() */
+	/**
+	 * Reset all bindings on a prepared statement.
+	 *
+	 * Wraps [`sqlite3_clear_bindings()`](http://www.sqlite.org/c3ref/clear_bindings.html)
+	 */
 	void clear_bindings();
 
 
 	// Result columns
 
-	/** sqlite3_column_count() */
+	/**
+	 * Number of coulmns in a result set.
+	 *
+	 * Wraps [`sqlite3_column_count()`](http://www.sqlite.org/c3ref/column_count.html) 
+	 */
 	int col_count() const;
 
 	/** Get a column object */
 	column col(int idx);
 
-	/** Access the value of a column in the current result row. */
+	/**
+	 * Access the value of a column in the current result row.
+	 */
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) const;
 
 
 	// Statement execution
-	/** sqlite3_step() */
+	/**
+	 * Executes a prepared statement or advances to the next row of results.
+	 *
+	 * Wraps [`sqlite3_step()`](http://www.sqlite.org/c3ref/step.html)
+	 */
 	void step();
 
 	/** Execute a statement */
@@ -155,7 +205,14 @@ public:
 	/** Advance to next result row */
 	void next_row();
 
-	/** sqlite3_reset() */
+	/**
+	 * Resets a statement so that it can be executed again.
+	 *
+	 * Any bound parameters are not automatically unbound by this. Use
+	 * `statement::clear_bindings()` for that.
+	 *
+	 * Wraps ['sqlite3_reset()'](http://www.sqlite.org/c3ref/reset.html).
+	 */
 	void reset();
 
 	// Result row access
@@ -164,7 +221,6 @@ public:
 	bool done() const { return completed; }
 	operator bool() const { return !completed; }
 
-	// TODO: Return int rownumber instead when iterating? Might be less confusing.
 	class row_iterator : public std::iterator<std::input_iterator_tag, size_t> {
 	private:
 		statement *s;
@@ -183,21 +239,32 @@ public:
 		// Not reasonably implementable with correct return type:
 		void operator++(int) { ++*this; }
 
-		bool operator==(const row_iterator &other) const { return (s == other.s) && (rowidx == other.rowidx); }
+		bool operator==(const row_iterator &other) const { return (s == other.s); }
 		bool operator!=(const row_iterator &other) const { return !(*this == other); }
 	};
 
 	row_iterator begin() { return row_iterator(this); }
 	row_iterator end() { return row_iterator(); }
 
-	/** sqlite3_changes() */
-	int changes() const;
-
-	/** sqlite3_sql() */
+	/**
+    * Receive statement SQL
+    *
+    * Wraps [`sqlite3_sql()`](http://www.sqlite.org/c3ref/sql.html)
+    **/
 	const char* sql();
 
-	/** sqlite3_stmt_status() */
+	/**
+    * Wraps [`sqlite3_stmt_status()`](http://www.sqlite.org/c3ref/stmt_status.html)
+    */
 	int status(int op, bool reset=false);
+	/**
+    * Wraps [`sqlite3_stmt_readonly()`](http://www.sqlite.org/c3ref/stmt_readonly.html)
+    */
+   bool readonly() const;
+	/**
+    * Wraps [`sqlite3_stmt_busy()`](http://www.sqlite.org/c3ref/stmt_busy.html)
+    */
+   bool busy() const;
 
 	/** Raw access to the underlying `sqlite3_stmt*` handle */
 	sqlite3_stmt* raw() const { return handle; }
@@ -255,28 +322,29 @@ template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy);
 
 
-/** sqlite3_column_int() */
+/** Wraps [`sqlite3_column_int()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 int statement::val<int>(int idx) const;
 
-/** sqlite3_column_int64() */
+/** Wraps [`sqlite3_column_int64()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 int64_t statement::val<int64_t>(int idx) const;
 
-/** sqlite3_column_double() */
+/** Wraps [`sqlite3_column_double()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 double statement::val<double>(int idx) const;
 
-/** sqlite3_column_text() */
+/** Wraps [`sqlite3_column_text()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 const char* statement::val<const char*>(int idx) const;
 
+/** Wraps [`sqlite3_column_text()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 inline std::string statement::val<std::string>(int idx) const {
 	return val<const char*>(idx);
 }
 
-/** sqlite3_column_blob() */
+/** Wraps [`sqlite3_column_blob()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
 blob statement::val<blob>(int idx) const;
 

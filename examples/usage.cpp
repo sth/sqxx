@@ -3,7 +3,6 @@
 #include <iostream>
 
 int main() {
-//#include "example_body.inc.cpp"
     // opening a database. Could use a file name instead of :memory:
     sqxx::connection conn(":memory:", sqxx::OPEN_CREATE|sqxx::OPEN_READWRITE);
 

@@ -1,0 +1,222 @@
+
+sqxx status for C API functions:
+
+- sqlite3_aggregate_context: internal for aggregates
+- sqlite3_aggregate_count: deprecated in C API
+
+- sqlite3_auto_extension: MISSING (dbext)
+
+- sqlite3_backup_finish: `backup::~backup()`
+- sqlite3_backup_init: `backup::backup()`
+- sqlite3_backup_pagecount: `backup::pagecount()`
+- sqlite3_backup_remaining: `backup::remaining()`
+- sqlite3_backup_step: `backup::step()`, `backup::iterator::operator++()`
+
+- sqlite3_bind_blob: `statement::bind()`
+- sqlite3_bind_double: `statement::bind()`
+- sqlite3_bind_int:: `statement::bind()` 
+- sqlite3_bind_int64: `statement::bind()`
+- sqlite3_bind_null: `statement::bind()`
+- sqlite3_bind_parameter_count: `statement::param_count()`
+- sqlite3_bind_parameter_index: `statement::param_index()`
+- sqlite3_bind_parameter_name: `parameter::name()`
+- sqlite3_bind_text: `statement::bind()`
+- sqlite3_bind_text16: use utf8 version
+- sqlite3_bind_value: `statement::bind()`
+- sqlite3_bind_zeroblob: `statement::bind()`
+
+- sqlite3_blob_bytes: `blob_source::len` UNFINISHED
+- sqlite3_blob_close: `blob_source::close()` UNFINISHED
+- sqlite3_blob_open: MISSING
+- sqlite3_blob_read: `blob_source::read()` UNFINISHED
+- sqlite3_blob_reopen: MISSING
+- sqlite3_blob_write: `blob_source::write()` UNFINISHED
+
+- sqlite3_busy_handler: `connection::set_busy_handler()`
+- sqlite3_busy_timeout: `connection::busy_timeout()`
+- sqlite3_cancel_auto_extension: MISSING (dbext)
+- sqlite3_changes: `statement::changes()`
+- sqlite3_clear_bindings: `statement::clear_bindings()`
+- sqlite3_close: `connection::close_sync()`
+- sqlite3_close_v2: `connection::close()`
+- sqlite3_collation_needed: `connection::set_collation_handler()`
+- sqlite3_collation_needed16: use UTF-8 version instead
+
+- sqlite3_column_blob: `statement::val<blob>()`
+- sqlite3_column_bytes: internally used for `statement::val<blob>()`
+- sqlite3_column_bytes16: use UTF-8 version instead
+- sqlite3_column_count: statement::column_count()
+- sqlite3_column_database_name: `column::database_name()`
+- sqlite3_column_database_name16: use UTF-8 version instead
+- sqlite3_column_decltype: `column::decl_type()`
+- sqlite3_column_decltype16: use UTF-8 version instead
+- sqlite3_column_double: `statement::val<double>()`
+- sqlite3_column_int: `statement::val<int>()`
+- sqlite3_column_int64: `statement::val<int64_t()`
+- sqlite3_column_name: `column::name()`
+- sqlite3_column_name16: use UTF-8 version instead
+- sqlite3_column_origin_name `column:origin_name()`
+- sqlite3_column_origin_name16: use UTF-8 version instead
+- sqlite3_column_table_name: `column::table_name()`
+- sqlite3_column_table_name16: use UTF-8 version instead
+- sqlite3_column_text: `statement::val<const char*>()`, `statement::val<std::string>()`
+- sqlite3_column_text16: use UTF-8 version instead
+- sqlite3_column_type: `column::type()`
+- sqlite3_column_value: MISSING
+
+- sqlite3_commit_hook: `connection::set_commit_handler()`
+- sqlite3_compileoption_get: MISSING
+- sqlite3_compileoption_used: MISSING
+- sqlite3_complete: MISSING
+- sqlite3_complete16: use UTF-8 version instead
+- sqlite3_config: MISSING
+
+- sqlite3_context_db_handle: MISSING. TODO add to `context`
+
+- sqlite3_create_collation: see `_v2`
+- sqlite3_create_collation16: see `_v2`
+- sqlite3_create_collation_v2: `connection::create_collation()`
+- sqlite3_create_function: see `_v2`
+- sqlite3_create_function16: see _v2`
+- sqlite3_create_function_v2: `connection::create_function()`
+- sqlite3_create_module: see `_v2`
+- sqlite3_create_module_v2: MISSING (dbext vtab)
+- sqlite3_data_count: Missing; Like sqlite3_column_count, only more limited?
+- sqlite3_db_config: MISSING
+- sqlite3_db_filename: `connection::db_filename()`
+- sqlite3_db_handle: MISSING (internal?)
+- sqlite3_db_mutex: MISSING
+- sqlite3_db_readonly: `connection::db_readonly()`
+- sqlite3_db_release_memory: `connection::release_memory()`
+- sqlite3_db_status: `connection::db_status()`
+- sqlite3_declare_vtab: MISSING (dbext vtab)
+- sqlite3_enable_load_extension: MISSING (loadext)
+- sqlite3_enable_shared_cache: MISSING
+- sqlite3_errcode
+- sqlite3_errmsg
+- sqlite3_errmsg16: use UTF-8 version instead
+- sqlite3_errstr
+- sqlite3_exec: MISSING; `connection::exec()` (does not internally use this API function, but prepare/step/... manually)
+- sqlite3_expired: deprecated in C API
+- sqlite3_extended_errcode
+- sqlite3_extended_result_codes
+- sqlite3_file_control: MISSING (fcntl)
+- sqlite3_finalize: `statement::~statement()`
+- sqlite3_free: Missing; Not sure where it would be required to be used
+- sqlite3_free_table: legacy interface in C API
+- sqlite3_get_autocommit: MISSING
+- sqlite3_get_auxdata: MISSING (sqlfunc)
+- sqlite3_get_table: legacy interface in C API
+- sqlite3_global_recover: deprecated in C API
+- sqlite3_initialize: automatically called in sqxx.cpp:lib_setup
+- sqlite3_interrupt: `connection::interrupt()`
+- sqlite3_last_insert_rowid: MISSING
+- sqlite3_libversion: MISSING
+- sqlite3_libversion_number: MISSING
+- sqlite3_limit: `connection::limit()`
+- sqlite3_load_extension: MISSING (loadext)
+- sqlite3_log: MISSING (for internal use, maybe provide for collation functions/...)
+- sqlite3_malloc: Missing; Not sure where it would be required to be used
+- sqlite3_memory_alarm: Deprecated in C API
+- sqlite3_memory_highwater: MISSING
+- sqlite3_memory_used: MISSING
+- sqlite3_mprintf: MISSING, for internal use (maybe provide on `context`)
+
+- sqlite3_mutex_alloc: MISSING
+- sqlite3_mutex_enter: MISSING
+- sqlite3_mutex_free: MISSING
+- sqlite3_mutex_held: MISSING
+- sqlite3_mutex_leave: MISSING
+- sqlite3_mutex_notheld: MISSING
+- sqlite3_mutex_try: MISSING
+
+- sqlite3_next_stmt: MISSING
+- sqlite3_open: see `_v2`
+- sqlite3_open16: see `_v2`
+- sqlite3_open_v2: `connection::open()`
+- sqlite3_os_end: Only for internal use
+- sqlite3_os_init: Only for internal use
+- sqlite3_overload_function: MISSING (vtab)
+- sqlite3_prepare: see `_v2`
+- sqlite3_prepare16: see `_v2`
+- sqlite3_prepare16_v2: see UTF-8 version
+- sqlite3_prepare_v2: `connection::prepare()`
+- sqlite3_profile: `connection:set_profile_handler()`
+- sqlite3_progress_handler: MISSING
+- sqlite3_randomness: MISSING
+- sqlite3_realloc: Missing; Not sure where it would be required to be used
+- sqlite3_release_memory: `release_memory()`
+- sqlite3_reset: `statement::reset()`
+- sqlite3_reset_auto_extension: MISSING
+- sqlite3_result_blob: MISSING, internal/`context::result()`
+- sqlite3_result_double: MISSING, internal/`context::result()`
+- sqlite3_result_error: internal/`context::result_error()`
+- sqlite3_result_error16: use UTF-8 version instead
+- sqlite3_result_error_code: internal/`context::result_error_code()`
+- sqlite3_result_error_nomem: internal/`context::result_error_nomem()`
+- sqlite3_result_error_toobig: internal/`context::result_error_toobig()`
+- sqlite3_result_int: internal/`context::result()`
+- sqlite3_result_int64: MISSING, internal/`context::result()`
+- sqlite3_result_null: internal/`context::result_null()`
+- sqlite3_result_text: MISSING, internal/`context::result()`
+- sqlite3_result_text16: see UTF-8 version
+- sqlite3_result_text16be: see UTF-8 version
+- sqlite3_result_text16le: see UTF-8 version
+- sqlite3_result_value: MISSING, internal/`context::result()`
+- sqlite3_result_zeroblob: MISSING, internal/`context::result()`
+- sqlite3_rollback_hook: `connection::set_rollback_handler()`
+- sqlite3_set_authorizer: `connection::set_authorize_handler()`
+- sqlite3_set_auxdata: MISSING (sqlfunc)
+- sqlite3_shutdown: automatically called in sqxx.cpp:lib_setup
+- sqlite3_sleep: MISSING
+- sqlite3_snprintf: MISSING
+- sqlite3_soft_heap_limit  (obs)
+- sqlite3_soft_heap_limit64: `soft_heap_limit()`
+- sqlite3_sourceid: `c_sourceid()`
+- sqlite3_sql: `statement::sql()`
+- sqlite3_status: `status()`
+- sqlite3_step: `statement::step()`
+- sqlite3_stmt_busy: `statement::busy()`
+- sqlite3_stmt_readonly: `statement::readonly()`
+- sqlite3_stmt_status: `statement::status()`
+- sqlite3_strglob: MISSING
+- sqlite3_stricmp: MISSING
+- sqlite3_strnicmp: MISSING
+- sqlite3_table_column_metadata: `connection::metadata()`
+- sqlite3_test_control: MISSING
+- sqlite3_thread_cleanup: obsolete
+- sqlite3_threadsafe: `threadsafe()`
+- sqlite3_total_changes: `connection::total_changes()`
+- sqlite3_trace: `connection::trace()`
+- sqlite3_transfer_bindings: obsolete
+- sqlite3_unlock_notify: MISSING
+- sqlite3_update_hook: `connection::set_update_handler()`
+- sqlite3_uri_boolean: MISSING (vfs)
+- sqlite3_uri_int64: MISSING (vfs)
+- sqlite3_uri_parameter: MISSING (vfs)
+- sqlite3_user_data: internal (`connection::create_function()`)
+- sqlite3_value_blob: `value::val()`
+- sqlite3_value_bytes: `value::val()`
+- sqlite3_value_bytes16
+- sqlite3_value_double: `value::val()`
+- sqlite3_value_int: `value::val()`
+- sqlite3_value_int64: `value::val()`
+- sqlite3_value_numeric_type
+- sqlite3_value_text: `value::val()`
+- sqlite3_value_text16: use UTF-8 version instead
+- sqlite3_value_text16be: use UTF-8 version instead
+- sqlite3_value_text16le: use UTF-8 version instead
+- sqlite3_value_type
+- sqlite3_version: use `sqlite3__libversion()` instead
+- sqlite3_vfs_find: MISSING (vfs)
+- sqlite3_vfs_register: MISSING (vfs)
+- sqlite3_vfs_unregister: MISSING (vfs)
+- sqlite3_vmprintf: MISSING
+- sqlite3_vsnprintf: MISSING
+- sqlite3_vtab_config: MISSING (vtab)
+- sqlite3_vtab_on_conflict: MISSING (vtab)
+- sqlite3_wal_autocheckpoint: MISSING
+- sqlite3_wal_checkpoint: see `_v2`
+- sqlite3_wal_checkpoint_v2: MISSING
+- sqlite3_wal_hook: MISSING
+

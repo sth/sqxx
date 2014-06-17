@@ -108,5 +108,84 @@ void connection::create_function_p(const char *name, int nargs, detail::function
 	}
 }
 
+
+
+template<class Aggregate>
+void create_aggregation() {
+}
+
+struct aggregate_data {
+	virtual void step(sqlite3_context *handle, int nargs, sqlite3_value **values) = 0;
+	virtual void final(sqlite3_context *handle) = 0;
+};
+
+
+template<class Aggregator>
+struct aggregate_data_c : aggregate_data {
+	Aggregator* get_aggr(sqlite3_context *handle) {
+		Aggregator **aggr = reinterpret_cast<Aggregator**>(
+				sqlite3_aggregate_context(handle, sizeof(Aggregator*))
+			);
+		if (!aggr) {
+			throw std::bad_alloc();
+		}
+		if (!*aggr) {
+			*aggr = new Aggregator();
+		}
+		return *aggr;
+	}
+	void step(sqlite3_context *handle, int nargs, sqlite3_value **values) override {
+		apply_array(get_aggr(handle)->step, nargs, values);
+		//std::vector<value> vs(values, values+nargs);
+	}
+	void final(sqlite3_context *handle) override {
+		// Take ownership of aggr, deleting it on return
+		std::unique_ptr<Aggregator> *aggr = get_aggr(handle);
+		context(handle).result(aggr->final());
+	}
+};
+
+class aggregation {
+	virtual void step(...);
+	virtual void final(context);
+};
+
+template<class Aggregator>
+class aggregate_manager {
+	virtual Aggregator* create() {
+		return new Aggregator();
+	}
+	virtual void destroy(Aggregator *aggr) {
+		delete aggr;
+	}
+};
+
+/*
+class aggregate_manager {
+	virtual void create(Aggregator **aggr) {
+	}
+	virtual void destroy(Aggregator *aggr) {
+	}
+};
+
+void f() {
+	Data data;
+
+	sq.create_aggregate(
+
+
+class aggregation_arr {
+	virtual void step(const std::vector<value> &values);
+	virtual void final(context &);
+};
+*/
+
+typedef std::function<context&(const std::vector<value>&)> function_arr_t;
+
 } // namepace sqxx
 
+// Types of functions
+//
+// int f(Param...)
+// void f(context, Param...);
+// void f(context, std::vector<value>);

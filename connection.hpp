@@ -7,12 +7,37 @@
 #include "datatypes.hpp"
 #include <memory>
 #include <functional>
+#include "callable/callable.hpp"
 
 struct sqlite3;
 
 namespace sqxx {
 
+enum open_flags {
+	 OPEN_READONLY =         0x00000001,  /* Ok for sqlite3_open_v2() */
+	 OPEN_READWRITE =        0x00000002,  /* Ok for sqlite3_open_v2() */
+	 OPEN_CREATE =           0x00000004,  /* Ok for sqlite3_open_v2() */
+	 //OPEN_DELETEONCLOSE =    0x00000008,  /* VFS only */
+	 //OPEN_EXCLUSIVE =        0x00000010,  /* VFS only */
+	 //OPEN_AUTOPROXY =        0x00000020,  /* VFS only */
+	 OPEN_URI =              0x00000040,  /* Ok for sqlite3_open_v2() */
+	 OPEN_MEMORY =           0x00000080,  /* Ok for sqlite3_open_v2() */
+	 //OPEN_MAIN_DB =          0x00000100,  /* VFS only */
+	 //OPEN_TEMP_DB =          0x00000200,  /* VFS only */
+	 //OPEN_TRANSIENT_DB =     0x00000400,  /* VFS only */
+	 //OPEN_MAIN_JOURNAL =     0x00000800,  /* VFS only */
+	 //OPEN_TEMP_JOURNAL =     0x00001000,  /* VFS only */
+	 //OPEN_SUBJOURNAL =       0x00002000,  /* VFS only */
+	 //OPEN_MASTER_JOURNAL =   0x00004000,  /* VFS only */
+	 OPEN_NOMUTEX =          0x00008000,  /* Ok for sqlite3_open_v2() */
+	 OPEN_FULLMUTEX =        0x00010000,  /* Ok for sqlite3_open_v2() */
+	 OPEN_SHAREDCACHE =      0x00020000,  /* Ok for sqlite3_open_v2() */
+	 OPEN_PRIVATECACHE =     0x00040000,  /* Ok for sqlite3_open_v2() */
+	 //OPEN_WAL =              0x00080000,  /* VFS only */
+};
+
 class statement;
+
 namespace detail {
 	// Helpers for user defined callbacks/sql functions
 	struct callback_table;
@@ -36,6 +61,7 @@ private:
 	friend class detail::callback_table;
 	std::unique_ptr<detail::callback_table> callbacks;
 
+	// On-demand initialization of callback table
 	void setup_callbacks();
 
 public:
@@ -50,42 +76,84 @@ public:
 	connection(connection&&) = default;
 	connection& operator=(connection&&) = default;
 
-	/** sqlite3_db_filename() */
+	/**
+	 * The database file name.
+	 *
+	 * Wraps [`sqlite3_db_filename()`](http://www.sqlite.org/c3ref/db_filename.html)
+	 */
 	const char* filename(const char *db = "main") const;
 	const char* filename(const std::string &db) const { return filename(db.c_str()); }
 
-	/** sqlite3_db_readonly() */
+	/**
+	 * Determine if the database is read-only.
+	 *
+	 * Wraps [`sqlite3_db_readonly()`](http://www.sqlite.org/c3ref/db_readonly.html)
+	 */
 	bool readonly(const char *dbname = "main") const;
 	bool readonly(const std::string &dbname) const { return readonly(dbname.c_str()); }
 
-	/** sqlite3_db_status() */
+	/**
+	 * Get the database connection status.
+	 *
+	 * Wraps [`sqlite3_db_status()`](http://www.sqlite.org/c3ref/db_status.html)
+	 */
 	std::pair<int, int> status(int op, bool reset=false);
 
-	/** sqlite3_table_column_metadata() */
+	/**
+	 * Wraps [`sqlite3_table_column_metadata()`](http://www.sqlite.org/c3ref/table_column_metadata.html)
+	 */
 	column_metadata metadata(const char *db, const char *table, const char *column) const;
 
-	/** sqlite3_total_changes() */
+	/** Total number of rows modified by statements.
+	 *
+	 * Wraps [`sqlite3_total_changes()`](http://www.sqlite.org/c3ref/total_changes.html)
+	 */
 	int total_changes() const;
 
-	/** sqlite3_open_v2() */
+	/**
+	 * Open a new database connection.
+	 *
+	 * Wraps [`sqlite3_open_v2()`](http://www.sqlite.org/c3ref/open.html)
+	 */
 	void open(const char *filename, int flags = 0);
 	void open(const std::string &filename, int flags = 0) { open(filename.c_str(), flags); }
 
-	/** sqlite3_close_v2() */
+	/**
+	 * Close the database connection (might delay closure and finish it async).
+	 *
+	 * [`sqlite3_close_v2()`](http://www.sqlite.org/c3ref/close.html)
+	 */
 	void close() noexcept;
-	/** sqlite3_close() */
+	/**
+	 * Close the database connection (might fail to close and throw).
+	 *
+	 * Wraps [`sqlite3_close()`](http://www.sqlite.org/c3ref/close.html)
+	 */
 	void close_sync();
 
-	/** sqlite3_create_collation_v2() */
+	/**
+	 * Create or redefine a SQL collation function.
+	 *
+	 * Wraps [`sqlite3_create_collation_v2()`](http://www.sqlite.org/c3ref/create_collation.html)
+	 */
 	typedef std::function<int (int, const char*, int, const char*)> collation_function_t;
 	void create_collation(const char *name, const collation_function_t &coll);
 
-	//typedef std::function<int (const std::string &, const std::string &)> collation_str_function_t;
-	//void create_collation(const char *name, const collation_str_function_t &coll);
+	template<typename Callable>
+	void create_collation(const char *name, Callable coll);
+	template<typename Callable>
+	void create_collation(const std::string &name, Callable coll);
 
-	/** Create a sql prepared statement
+	typedef std::function<int (const std::string &, const std::string &)> collation_function_stdstr_t;
+	void create_collation_stdstr(const char *name, const collation_function_stdstr_t &coll);
+
+	template<typename Callable>
+	void create_collation_stdstr(const char *name, Callable coll);
+
+	/**
+	 * Create a sql prepared statement
 	 *
-	 * sqlite3_prepare_v2()
+	 * Wraps [`sqlite3_prepare_v2()`](http://www.sqlite.org/c3ref/prepare.html)
 	 */
 	statement prepare(const char *sql);
 	statement prepare(const std::string &sql);
@@ -100,6 +168,10 @@ public:
 	statement run(const char *sql);
 	statement run(const std::string &sql);
 
+	// sqlite3_exec().
+	// Only for api compatibility, better use run() and iterator interface
+	//void exec(const char *sql, const std::function<bool()> &callback);
+
 	/*
 	template<typename T>
 	std::vector<T> simple_result(int colnum) {
@@ -111,37 +183,80 @@ public:
 	}
 	*/
 
-	/** sqlite3_interrupt() */
+	/**
+	 * Interrupt a long-running query
+	 *
+	 * Wraps [`sqlite3_interrupt()`](http://www.sqlite.org/c3ref/interrupt.html)
+	 */
 	void interrupt();
-	/** sqlite3_limit() */
+	/** 
+	 * Set run-time limits
+	 *
+	 * Wraps [`sqlite3_limit()`](http://www.sqlite.org/c3ref/limit.html)
+	 */
 	int limit(int id, int newValue);
 
-	/** sqlite3_busy_timeout() */
+	/**
+	 * Sets a busy timeout.
+	 *
+	 * Wraps [`sqlite3_busy_timeout()`](http://www.sqlite.org/c3ref/busy_timeout.html)
+	 */
 	void busy_timeout(int ms);
-	/** sqlite3_db_release_memory() */
+	/**
+	 * Try to free memory that is no longer used by the database connection.
+	 *
+	 * Wraps [`sqlite3_db_release_memory()`](http://www.sqlite.org/c3ref/db_release_memory.html)
+	 */
 	void release_memory();
 
-	/* sqlite3_commit_hook() */
+	/**
+	 * Counts number of rows modified by last executed statement.
+	 *
+	 * Wraps [`sqlite3_changes()`](http://www.sqlite.org/c3ref/changes.html)
+	 */
+	int changes() const;
+
+	/**
+	 * Register/clear a commit notification callback.
+	 *
+	 * Wraps [`sqlite3_commit_hook()`](http://www.sqlite.org/c3ref/commit_hook.html)
+	 */
 	typedef std::function<int ()> commit_handler_t;
 	void set_commit_handler(const commit_handler_t &fun);
 	void set_commit_handler();
 
-	/* sqlite3_rollback_hook() */
+	/**
+	 * Register/clear a rollback notification callback.
+	 *
+	 * Wraps [`sqlite3_rollback_hook()`](http://www.sqlite.org/c3ref/commit_hook.html)
+	 */
 	typedef std::function<void ()> rollback_handler_t;
 	void set_rollback_handler(const rollback_handler_t &fun);
 	void set_rollback_handler();
 
-	/* sqlite3_update_hook() */
+	/**
+	 * Register a data change notification callback.
+	 *
+	 * Wraps [`sqlite3_update_hook()`](http://www.sqlite.org/c3ref/update_hook.html)
+	 */
 	typedef std::function<void (int, const char*, const char *, int64_t)> update_handler_t;
 	void set_update_handler(const update_handler_t &fun);
 	void set_update_handler();
 
-	/* sqlite3_trace() */
+	/**
+	 * Register a trace callback function
+	 *
+	 * Wraps [`sqlite3_trace()`](http://www.sqlite.org/c3ref/profile.html)
+	 */
 	typedef std::function<void (const char*)> trace_handler_t;
 	void set_trace_handler(const trace_handler_t &fun);
 	void set_trace_handler();
 
-	/* sqlite3_profile() */
+	/**
+	 * Register a profiling callback function
+	 *
+	 * Wraps [`sqlite3_profile()`](http://www.sqlite.org/c3ref/profile.html)
+	 */
 	typedef std::function<void (const char*, uint64_t)> profile_handler_t;
 	void set_profile_handler(const profile_handler_t &fun);
 	void set_profile_handler();
@@ -151,7 +266,11 @@ public:
 	void set_authorize_handler(const authorize_handler_t &fun);
 	void set_authorize_handler();
 
-	/* sqlite3_busy_handler() */
+	/**
+	 * Registers a callback to handle SQLITE_BUSY errors.
+	 *
+	 * Wraps [`sqlite3_busy_handler()`](http://www.sqlite.org/c3ref/busy_handler.html)
+	 */
 	typedef std::function<bool (int)> busy_handler_t;
 	void set_busy_handler(const busy_handler_t &busy);
 	void set_busy_handler();
@@ -161,22 +280,30 @@ public:
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
 
+	//typedef std::function<void ()> unlock_handler_t;
+	//void set_unlock_handler(const unlock_handler_t &fun);
+	//void set_unlock_handler();
+
+
 private:
 	void create_function_p(const char *name, int nargs, detail::function_data *fundata);
 
 public:
-	//template<typename Callable>
-	//void create_function(const char *name, Callable &fun);
-
+	/**
+	 * Create or redefine a SQL function.
+	 *
+	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
+	 */
 	template<typename R, typename... Ps>
 	void create_function(const char *name, const std::function<R (Ps...)> &fun);
 
-	///** Define a SQL function, automatically deduce the number of arguments */
-	//template<typename Callable>
-	//void create_function(const char *name, Callable f);
-	///** Define a SQL function with the given number of arguments. Use if automatic deduction fails. */
-	//template<int NArgs, typename Callable>
-	//void create_function_n(const char *name, Callable f);
+	/** Define a SQL function, automatically deduce the number of arguments */
+	template<typename Callable>
+	void create_function(const char *name, Callable f);
+
+	//template<typename R, typename... Ps>
+	//void create_function_ctx(const char *name, const std::function<R (context&, Ps...)> &fun);
+
 	/** Define a SQL function with variable number of arguments. The Callable will be
 	 * called with a single parameter, a std::vector<sqxx::value>.
 	 */
@@ -185,16 +312,48 @@ public:
 
 	/*
 	// TODO
+	template<typename AggregateData>
+	void create_aggregate(const char *name, const std::function<AggregateData* ()> &factory) {
+	}
+
+	template<typename AggregateFactory>
+	void create_aggregate_mng(const char *name, const std::function<AggregateData* ()> &factory) {
+	}
+
 	template<typename Aggregator>
-	void create_aggregare(const char *name);
+	void create_aggregate(const char *name, aggregate_step_t, aggregate_final_t);
 
 	template<typename AggregatorFactory>
-	void create_aggregare(const char *name, AggregatorFactory f);
+	void create_aggregate(const char *name, AggregatorFactory f);
+
+	template<typename Aggregator>
+	void create_aggregate_class(const char *name);
 	*/
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }
 };
+
+template<typename Callable>
+void connection::create_collation(const char *name, Callable coll) {
+	collation_function_t stdfun(coll);
+	create_collation(name, stdfun);
+}
+template<typename Callable>
+void connection::create_collation(const std::string &name, Callable coll) {
+	create_collation(name.c_str(), std::forward<Callable>(coll));
+}
+
+template<typename Callable>
+void connection::create_collation_stdstr(const char *name, Callable coll) {
+	collation_function_stdstr_t stdfun(coll);
+	create_collation_stdstr(name, stdfun);
+}
+
+template<typename Callable>
+void connection::create_function(const char *name, Callable fun) {
+	create_function(name, to_stdfunction(std::forward<Callable>(fun)));
+}
 
 } // namespace sqxx
 

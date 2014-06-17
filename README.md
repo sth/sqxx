@@ -13,6 +13,40 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
   or custom SQL functions, fully in C++. For example a lambda functions can be registered
   as a custom SQL function and then be called in SQL queries.
 
+### General implemention features
+
+- Only minimal overhead over calling the C API functions directly
+- No pollution of the global namespace with sqlite symbols.
+- Access to raw sqlite handles to use C API functions directly, if
+  desired.
+- Register C++ functions/lambdas/... as SQL functions
+- Register C++ functions/lambdas/... as sqlite3 callbacks/hooks
+- Exception safe C/C++ boundary for callbacks/...
+
+
+### Missing features
+
+- No support to receive text values in UTF-16 encoding. All text functions use UTF-8. 
+
+    Sqlite contains API functions to access values in different kinds of UTF-16 encoding.
+    sqxx doesn't contain support for this, it accesses all values as UTF-8.
+    Note that sqlite stores all data internally as ?, the different encoding
+    variants for text functions just define how the values are converted before
+    they are returned by the API.<sup>[1][?]</sup> With sqxx all values will
+    always be returned as UTF-8, without the need to explicitly specify this.
+
+- `sqlite3_vfs_*` virtual file system handlers
+
+    This feature seems to be very specific and not usually used in normal operation.
+	 (TODO: reference to sqlite docs)
+
+- Aggregation functions (in development)
+- Some implemented features are not covered by test cases and maybe untested:
+  - varags SQL functions
+  - blob values
+  - `sqlite3_backup*` wrappers
+- No custom destructors for text/blob values given to sqlite
+
 ## Getting started
 
 ### Main classes
@@ -22,7 +56,7 @@ connection, and `sqxx::statement`, which represents a SQL statement including
 binding of parameters, executing the statement, and accessing the results of
 the execution.
 
-### Quick overview
+### Quick usage overview
 
 <#include "example.cpp">
 

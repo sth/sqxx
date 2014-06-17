@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(statement_result_iterator) {
 	BOOST_CHECK_EQUAL(st.col_count(), 1);
 	size_t rowcount = 0;
 	for (auto i : st) {
-		BOOST_CHECK_EQUAL(st.col(0).val<int>(), 11*i);
+		BOOST_CHECK_EQUAL(st.col(0).val<int>(), 11*(i+1));
 		rowcount = i+1;
 	}
 	BOOST_CHECK_EQUAL(rowcount, 3);
@@ -251,15 +251,23 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 BOOST_AUTO_TEST_CASE(create_function) {
 	tab ctx;
 	bool called = false;
-	std::string sql = "select plusfive(v) from items where id = 1";
 	ctx.conn.create_function("plusfive", std::function<int (int)>([&](int i) {
 		called = true;
 		BOOST_CHECK_EQUAL(i, 11);
 		return i+5;
 	}));
-	auto st = ctx.conn.run(sql);
-	BOOST_CHECK_EQUAL(st.val<int>(0), 16);
+	auto st1 = ctx.conn.run("select plusfive(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st1.val<int>(0), 16);
+	BOOST_CHECK(called);
 
+	called = false;
+	ctx.conn.create_function("plussix", [&](int i) {
+		called = true;
+		BOOST_CHECK_EQUAL(i, 11);
+		return i+6;
+	});
+	auto st2 = ctx.conn.run("select plussix(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st2.val<int>(0), 17);
 	BOOST_CHECK(called);
 }
 

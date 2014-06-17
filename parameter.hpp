@@ -22,12 +22,18 @@ public:
 
 	parameter(statement &a_stmt, int a_idx);
 
-	/** sqlite3_parameter_name() */
+	/**
+	 * Get name of this paramater.
+	 *
+	 * Wraps [`sqlite3_parameter_name()`](http://www.sqlite.org/c3ref/bind_parameter_name.html)
+	 */
 	const char* name() const;
 
-	/** Bind a value to this parameter
+	/**
+	 * Bind a value to this parameter.
 	 *
-	 * For details see statement::bind()
+	 * Like `statement::bind()`, just without parameters parameter.
+	 * See there for details.
 	 */
 	void bind();
 
