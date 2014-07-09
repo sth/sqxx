@@ -65,13 +65,13 @@ sqxx status for C API functions:
 - sqlite3_column_value: MISSING
 
 - sqlite3_commit_hook: `connection::set_commit_handler()`
-- sqlite3_compileoption_get: MISSING
-- sqlite3_compileoption_used: MISSING
-- sqlite3_complete: MISSING
+- sqlite3_compileoption_get: `compileoption_get()`
+- sqlite3_compileoption_used: `compileoption_used()`
+- sqlite3_complete: `complete()`
 - sqlite3_complete16: use UTF-8 version instead
-- sqlite3_config: MISSING
+- sqlite3_config: NOT SUPPORTED
 
-- sqlite3_context_db_handle: MISSING. TODO add to `context`
+- sqlite3_context_db_handle: MISSING, internal 
 
 - sqlite3_create_collation: see `_v2`
 - sqlite3_create_collation16: see `_v2`
@@ -82,7 +82,7 @@ sqxx status for C API functions:
 - sqlite3_create_module: see `_v2`
 - sqlite3_create_module_v2: MISSING (dbext vtab)
 - sqlite3_data_count: Missing; Like sqlite3_column_count, only more limited?
-- sqlite3_db_config: MISSING
+- sqlite3_db_config: `connection::config_*()`
 - sqlite3_db_filename: `connection::db_filename()`
 - sqlite3_db_handle: MISSING (internal?)
 - sqlite3_db_mutex: MISSING
@@ -104,22 +104,22 @@ sqxx status for C API functions:
 - sqlite3_finalize: `statement::~statement()`
 - sqlite3_free: Missing; Not sure where it would be required to be used
 - sqlite3_free_table: legacy interface in C API
-- sqlite3_get_autocommit: MISSING
+- sqlite3_get_autocommit: `connection::autocommit()`
 - sqlite3_get_auxdata: MISSING (sqlfunc)
 - sqlite3_get_table: legacy interface in C API
 - sqlite3_global_recover: deprecated in C API
 - sqlite3_initialize: automatically called in sqxx.cpp:lib_setup
 - sqlite3_interrupt: `connection::interrupt()`
-- sqlite3_last_insert_rowid: MISSING
-- sqlite3_libversion: MISSING
-- sqlite3_libversion_number: MISSING
+- sqlite3_last_insert_rowid: `connection::last_insert_rowid()`
+- sqlite3_libversion: `c_libversion()`
+- sqlite3_libversion_number: `c_libversion_number()`
 - sqlite3_limit: `connection::limit()`
 - sqlite3_load_extension: MISSING (loadext)
-- sqlite3_log: MISSING (for internal use, maybe provide for collation functions/...)
+- sqlite3_log: MISSING (for internal use, maybe provide for collation functions/..., hard to implement since its vararg)
 - sqlite3_malloc: Missing; Not sure where it would be required to be used
 - sqlite3_memory_alarm: Deprecated in C API
-- sqlite3_memory_highwater: MISSING
-- sqlite3_memory_used: MISSING
+- sqlite3_memory_highwater: `memory_highwater()`
+- sqlite3_memory_used: `memory_used()`
 - sqlite3_mprintf: MISSING, for internal use (maybe provide on `context`)
 
 - sqlite3_mutex_alloc: MISSING
@@ -130,7 +130,7 @@ sqxx status for C API functions:
 - sqlite3_mutex_notheld: MISSING
 - sqlite3_mutex_try: MISSING
 
-- sqlite3_next_stmt: MISSING
+- sqlite3_next_stmt: MISSING (would need non-owning `statement` objects)
 - sqlite3_open: see `_v2`
 - sqlite3_open16: see `_v2`
 - sqlite3_open_v2: `connection::open()`
@@ -142,8 +142,8 @@ sqxx status for C API functions:
 - sqlite3_prepare16_v2: see UTF-8 version
 - sqlite3_prepare_v2: `connection::prepare()`
 - sqlite3_profile: `connection:set_profile_handler()`
-- sqlite3_progress_handler: MISSING
-- sqlite3_randomness: MISSING
+- sqlite3_progress_handler: `connection::set_progress_handler()`
+- sqlite3_randomness: `randomness()`
 - sqlite3_realloc: Missing; Not sure where it would be required to be used
 - sqlite3_release_memory: `release_memory()`
 - sqlite3_reset: `statement::reset()`
@@ -183,7 +183,7 @@ sqxx status for C API functions:
 - sqlite3_stricmp: MISSING
 - sqlite3_strnicmp: MISSING
 - sqlite3_table_column_metadata: `connection::metadata()`
-- sqlite3_test_control: MISSING
+- sqlite3_test_control: MISSING, internal C library
 - sqlite3_thread_cleanup: obsolete
 - sqlite3_threadsafe: `threadsafe()`
 - sqlite3_total_changes: `connection::total_changes()`
@@ -197,11 +197,11 @@ sqxx status for C API functions:
 - sqlite3_user_data: internal (`connection::create_function()`)
 - sqlite3_value_blob: `value::val()`
 - sqlite3_value_bytes: `value::val()`
-- sqlite3_value_bytes16
+- sqlite3_value_bytes16:
 - sqlite3_value_double: `value::val()`
 - sqlite3_value_int: `value::val()`
 - sqlite3_value_int64: `value::val()`
-- sqlite3_value_numeric_type
+- sqlite3_value_numeric_type:
 - sqlite3_value_text: `value::val()`
 - sqlite3_value_text16: use UTF-8 version instead
 - sqlite3_value_text16be: use UTF-8 version instead
@@ -215,8 +215,8 @@ sqxx status for C API functions:
 - sqlite3_vsnprintf: MISSING
 - sqlite3_vtab_config: MISSING (vtab)
 - sqlite3_vtab_on_conflict: MISSING (vtab)
-- sqlite3_wal_autocheckpoint: MISSING
+- sqlite3_wal_autocheckpoint: `connection::wal_autocheckpoint()`
 - sqlite3_wal_checkpoint: see `_v2`
-- sqlite3_wal_checkpoint_v2: MISSING
-- sqlite3_wal_hook: MISSING
+- sqlite3_wal_checkpoint_v2: `connection::wal_checkpoint_*()`
+- sqlite3_wal_hook: `connection::wal_handler()`
 

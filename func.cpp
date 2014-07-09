@@ -4,7 +4,7 @@
 #include "func.hpp"
 #include "sqxx.hpp"
 #include "value.hpp"
-#include "detail.hpp"
+#include "error.hpp"
 #include <string>
 #include <functional>
 #include <sqlite3.h>
@@ -49,78 +49,63 @@ void connection::create_function_p(const char *name, int nargs, detail::function
 }
 
 
-
-template<class Aggregate>
-void create_aggregation() {
+extern "C"
+void sqxx_call_aggregate_step(sqlite3_context *ctx, int argc, sqlite3_value** argv) {
+	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(ctx));
+	context c(ctx);
+	try {
+		data->step_call(c, argc, argv);
+	}
+	catch (const error &e) {
+		c.result_error_code(e.code);
+	}
+	catch (const std::bad_alloc &) {
+		c.result_error_nomem();
+	}
+	catch (const std::exception &e) {
+		c.result_error(e.what());
+	}
+	catch (...) {
+		c.result_error_code(SQLITE_MISUSE);
+	}
 }
 
-struct aggregate_data {
-	virtual void step(sqlite3_context *handle, int nargs, sqlite3_value **values) = 0;
-	virtual void final(sqlite3_context *handle) = 0;
-};
-
-
-template<class Aggregator>
-struct aggregate_data_c : aggregate_data {
-	Aggregator* get_aggr(sqlite3_context *handle) {
-		Aggregator **aggr = reinterpret_cast<Aggregator**>(
-				sqlite3_aggregate_context(handle, sizeof(Aggregator*))
-			);
-		if (!aggr) {
-			throw std::bad_alloc();
-		}
-		if (!*aggr) {
-			*aggr = new Aggregator();
-		}
-		return *aggr;
+extern "C"
+void sqxx_call_aggregate_final(sqlite3_context *ctx) {
+	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(ctx));
+	context c(ctx);
+	try {
+		data->final_call(c);
 	}
-	void step(sqlite3_context *handle, int nargs, sqlite3_value **values) override {
-		apply_array(get_aggr(handle)->step, nargs, values);
-		//std::vector<value> vs(values, values+nargs);
+	catch (const error &e) {
+		c.result_error_code(e.code);
 	}
-	void final(sqlite3_context *handle) override {
-		// Take ownership of aggr, deleting it on return
-		std::unique_ptr<Aggregator> *aggr = get_aggr(handle);
-		context(handle).result(aggr->final());
+	catch (const std::bad_alloc &) {
+		c.result_error_nomem();
 	}
-};
-
-class aggregation {
-	virtual void step(...);
-	virtual void final(context);
-};
-
-template<class Aggregator>
-class aggregate_manager {
-	virtual Aggregator* create() {
-		return new Aggregator();
+	catch (const std::exception &e) {
+		c.result_error(e.what());
 	}
-	virtual void destroy(Aggregator *aggr) {
-		delete aggr;
+	catch (...) {
+		c.result_error_code(SQLITE_MISUSE);
 	}
-};
+}
 
-/*
-class aggregate_manager {
-	virtual void create(Aggregator **aggr) {
+extern "C"
+void sqxx_call_aggregate_destroy(void *data) {
+	detail::aggregate_data *d = reinterpret_cast<detail::aggregate_data*>(data);
+	delete d;
+}
+
+void connection::create_aggregate_p(const char *name, int nargs, detail::aggregate_data *adat) {
+	int rv;
+	rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, adat,
+			nullptr, sqxx_call_aggregate_step, sqxx_call_aggregate_final, sqxx_call_aggregate_destroy);
+	if (rv != SQLITE_OK) {
+		delete adat;
+		throw static_error(rv);
 	}
-	virtual void destroy(Aggregator *aggr) {
-	}
-};
-
-void f() {
-	Data data;
-
-	sq.create_aggregate(
-
-
-class aggregation_arr {
-	virtual void step(const std::vector<value> &values);
-	virtual void final(context &);
-};
-*/
-
-typedef std::function<context&(const std::vector<value>&)> function_arr_t;
+}
 
 } // namepace sqxx
 

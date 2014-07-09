@@ -40,8 +40,9 @@ class statement;
 
 namespace detail {
 	// Helpers for user defined callbacks/sql functions
-	struct callback_table;
+	struct connection_callback_table;
 	struct function_data;
+	struct aggregate_data;
 }
 
 /** Metadata for a table column */
@@ -58,8 +59,8 @@ class connection {
 private:
 	sqlite3 *handle;
 
-	friend class detail::callback_table;
-	std::unique_ptr<detail::callback_table> callbacks;
+	friend class detail::connection_callback_table;
+	std::unique_ptr<detail::connection_callback_table> callbacks;
 
 	// On-demand initialization of callback table
 	void setup_callbacks();
@@ -85,12 +86,48 @@ public:
 	const char* filename(const std::string &db) const { return filename(db.c_str()); }
 
 	/**
+	 * Database configuration SQLITE_DBCONFIG_LOOKASIDE.
+	 *
+	 * Wraps [`sqlite3_db_config(s, SQLITE_DBCONFIG_LOOKASIDE, ...)`](http://www.sqlite.org/c3ref/db_config_enable_fkey.html)
+	 */
+	void config_lookaside(void *buf, int slotsize, int slotcount);
+
+	/**
+	 * Database configuration SQLITE_DBCONFIG_ENABLE_FKEY.
+	 *
+	 * Instead of using a `int*` out-parameter like the C API, this function
+	 * returns the new configuration satte as a boolean.
+	 *
+	 * Wraps [`sqlite3_db_config(s, SQLITE_DBCONFIG_ENABLE_FKEY, ...)`](http://www.sqlite.org/c3ref/db_config_enable_fkey.html)
+	 */
+	bool config_enable_fkey(int fk);
+
+	/**
+	 * Database configuration SQLITE_DBCONFIG_ENABLE_TRIGGER.
+	 *
+	 * Instead of using a `int*` out-parameter like the C API, this function
+	 * returns the new configuration satte as a boolean.
+	 *
+	 * Wraps [`sqlite3_db_config(s, SQLITE_DBCONFIG_ENABLE_TRIGGER, ...)`](http://www.sqlite.org/c3ref/db_config_enable_fkey.html)
+	 */
+	bool config_enable_trigger(int trig);
+
+	/**
 	 * Determine if the database is read-only.
 	 *
 	 * Wraps [`sqlite3_db_readonly()`](http://www.sqlite.org/c3ref/db_readonly.html)
 	 */
 	bool readonly(const char *dbname = "main") const;
 	bool readonly(const std::string &dbname) const { return readonly(dbname.c_str()); }
+
+	/**
+	 * Determine if the database is in autocommit mode.
+	 *
+	 * Wraps [`sqlite3_get_autocommit()`](http://www.sqlite.org/c3ref/get_autocommit.html)
+	 */
+	bool autocommit() const;
+
+	uint64_t last_insert_rowid() const;
 
 	/**
 	 * Get the database connection status.
@@ -275,6 +312,44 @@ public:
 	void set_busy_handler(const busy_handler_t &busy);
 	void set_busy_handler();
 
+	/**
+	 * Registers a query progress callback
+	 *
+	 * Wraps [`sqlite3_progress_handler()`](http://www.sqlite.org/c3ref/progress_handler.html)
+	 */
+	typedef std::function<bool ()> progress_handler_t;
+	void set_progress_handler(int n, const progress_handler_t &fun);
+	void set_progress_handler();
+
+	/**
+	 * Registers a write-ahead log hook
+	 *
+	 * Wraps [`sqlite3_wal_handler()`](http://www.sqlite.org/c3ref/wal_hook.html)
+	 */
+	typedef std::function<void (/*connection&,*/ const char*, int)> wal_handler_t;
+	void set_wal_handler(const wal_handler_t &fun);
+	void set_wal_handler();
+
+	/**
+	 * Configure an auto-checkpoint
+	 *
+	 * Wraps [`sqlite3_wal_autocheckpoint()`](http://www.sqlite.org/c3ref/wal_autocheckpoint.html)
+	 */
+	void wal_autocheckpoint(int frames);
+
+	/**
+	 * Checkpoint a database
+	 *
+	 * Wraps [`sqlite3_wal_checkpoint_v2()`](http://www.sqlite.org/c3ref/wal_checkpoint_v2.html)
+	 */
+	std::pair<int, int> wal_checkpoint(const char *dbname, int emode);
+	std::pair<int, int> wal_checkpoint_passive(const char *dbname);
+	std::pair<int, int> wal_checkpoint_passive(const std::string &dbname) { return wal_checkpoint_passive(dbname.c_str()); }
+	std::pair<int, int> wal_checkpoint_full(const char *dbname);
+	std::pair<int, int> wal_checkpoint_full(const std::string &dbname) { return wal_checkpoint_full(dbname.c_str()); }
+	std::pair<int, int> wal_checkpoint_restart(const char *dbname);
+	std::pair<int, int> wal_checkpoint_restart(const std::string &dbname) { return wal_checkpoint_restart(dbname.c_str()); }
+
 	/* sqlite3_collation_needed() */
 	typedef std::function<void (connection&, const char*)> collation_handler_t;
 	void set_collation_handler(const collation_handler_t &fun);
@@ -310,6 +385,22 @@ public:
 	template<typename Callable>
 	void create_function_vararg(const char *name, Callable f);
 
+private:
+	void create_aggregate_p(const char *name, int nargs, detail::aggregate_data *aggrdata);
+
+public:
+	//template<typename Aggregator>
+	//void create_aggregate(const char *name, Aggregator a);
+
+	//template<typename AggregateState>
+	//using aggregate_final_t = std::function<void (AggregateData*)>;
+
+	//template<typename AggregateState = void, typename StepCallable, typename FinalCallable>
+	//void create_aggregate(const char *name, StepCallable step, FinalCallable final);
+
+	//typename<typename AggregateState, typename Callable>
+	//void create_aggregate_functor(Callable factory);
+
 	/*
 	// TODO
 	template<typename AggregateData>
@@ -329,6 +420,21 @@ public:
 	template<typename Aggregator>
 	void create_aggregate_class(const char *name);
 	*/
+
+	template<typename State, typename Result, typename... Args>
+	void create_aggregate(const char *name,
+			const std::function<void (State&, Args...)> &stepfun,
+			const std::function<Result (const State &)> &finalfun,
+			State zero);
+
+	template<typename State, typename StepCallable, typename FinalCallable>
+	void create_aggregate(const char *name, StepCallable stepfun, FinalCallable finalfun, State zero); 
+
+	template<typename Result, typename... Args>
+	void create_aggregate(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero);
+
+	template<typename Result, typename Callable>
+	void create_aggregate(const char *name, Callable aggregator, Result zero);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }

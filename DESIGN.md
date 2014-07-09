@@ -60,3 +60,24 @@ class weighted_avg {
 
 
 
+- Have a base class with virtual functions, to register an aggregate derive a class
+  and pass that:
+
+    struct aggregation_data {
+       virtual void step(...);
+       virtual void final();
+    }
+
+    - `step` might take different kinds/number of parameters and return different
+         types for different aggregates. This means there is no struct that works
+         as a base class for all aggregates, specialization can't be done by virtual
+         functions.
+
+         So the approach doesn't work.
+
+    - Additionally, if the aggregation data contains STATE, a new object needs
+        to be created for each instance of the aggreagte. To do so, just knowing about
+        the base class won't be enough. The connection class will have to know
+        about the specific derived class it should instantiate, or there needs to be a factory function
+        that provides the objects.
+

@@ -3,7 +3,7 @@
 
 #include "connection.hpp"
 #include "sqxx.hpp"
-#include "detail.hpp"
+#include "error.hpp"
 #include <sqlite3.h>
 #include <iostream>
 #include <cstring>
@@ -59,7 +59,7 @@ struct collation_data_t {
 
 namespace detail {
 
-class callback_table {
+class connection_callback_table {
 public:
 	std::unique_ptr<connection::commit_handler_t> commit_handler;
 	std::unique_ptr<connection::rollback_handler_t> rollback_handler;
@@ -68,6 +68,8 @@ public:
 	std::unique_ptr<connection::profile_handler_t> profile_handler;
 	std::unique_ptr<connection::authorize_handler_t> authorize_handler;
 	std::unique_ptr<connection::busy_handler_t> busy_handler;
+	std::unique_ptr<connection::progress_handler_t> progress_handler;
+	std::unique_ptr<connection::wal_handler_t> wal_handler;
 	std::unique_ptr<collation_data_t> collation_data;
 };
 
@@ -98,11 +100,41 @@ const char *connection::filename(const char *db) const {
 	return sqlite3_db_filename(handle, db);
 }
 
+void connection::config_lookaside(void *buf, int slotsize, int slotcount) {
+	int rv = sqlite3_db_config(handle, SQLITE_DBCONFIG_LOOKASIDE, buf, slotsize, slotcount);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+bool connection::config_enable_fkey(int fk) {
+	int state;
+	int rv = sqlite3_db_config(handle, SQLITE_DBCONFIG_ENABLE_FKEY, fk, &state);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return state;
+}
+
+bool connection::config_enable_trigger(int trig) {
+	int state;
+	int rv = sqlite3_db_config(handle, SQLITE_DBCONFIG_ENABLE_TRIGGER, trig, &state);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return state;
+}
+
 bool connection::readonly(const char *dbname) const {
 	int rw = sqlite3_db_readonly(handle, dbname);
 	if (rw == -1)
 		throw error(SQLITE_ERROR, "no such database");
 	return bool(rw);
+}
+
+bool connection::autocommit() const {
+	return sqlite3_get_autocommit(handle);
+}
+
+uint64_t connection::last_insert_rowid() const {
+	return sqlite3_last_insert_rowid(handle);
 }
 
 std::pair<int, int> connection::status(int op, bool reset) {
@@ -315,7 +347,7 @@ void connection::release_memory() {
 
 void connection::setup_callbacks() {
 	if (!callbacks)
-		callbacks.reset(new detail::callback_table);
+		callbacks.reset(new detail::connection_callback_table);
 }
 
 int connection::changes() const {
@@ -535,6 +567,98 @@ void connection::busy_timeout(int ms) {
 		throw static_error(rv);
 	if (callbacks)
 		callbacks->busy_handler.reset();
+}
+
+
+extern "C"
+int sqxx_call_progress_handler(void *data) {
+	connection::progress_handler_t *fn = reinterpret_cast<connection::progress_handler_t*>(data);
+	try {
+		return (*fn)();
+	}
+	catch (...) {
+		handle_callback_exception("progress handler");
+		return 0;
+	}
+}
+
+void connection::set_progress_handler(int vinst, const progress_handler_t &fun) {
+	if (fun) {
+		std::unique_ptr<progress_handler_t> cb(new progress_handler_t(fun));
+		sqlite3_progress_handler(handle, vinst, sqxx_call_progress_handler, cb.get());
+		setup_callbacks();
+		callbacks->progress_handler = std::move(cb);
+	}
+	else {
+		set_progress_handler();
+	}
+}
+
+void connection::set_progress_handler() {
+	sqlite3_progress_handler(handle, 0, nullptr, nullptr);
+	if (callbacks)
+		callbacks->progress_handler.reset();
+}
+
+
+extern "C"
+int sqxx_call_wal_handler(void *data, sqlite3 *conn, const char *dbname, int pages) {
+	connection::wal_handler_t *fn = reinterpret_cast<connection::wal_handler_t*>(data);
+	try {
+		(*fn)(dbname, pages);
+		return SQLITE_OK;
+	}
+	catch (...) {
+		// TODO: Better exception handling?
+		handle_callback_exception("busy handler");
+		return SQLITE_ERROR;
+	}
+}
+
+void connection::set_wal_handler(const wal_handler_t &fun) {
+	if (fun) {
+		std::unique_ptr<wal_handler_t> cb(new wal_handler_t(fun));
+		sqlite3_wal_hook(handle, sqxx_call_wal_handler, cb.get());
+		setup_callbacks();
+		callbacks->wal_handler = std::move(cb);
+	}
+	else {
+		set_wal_handler();
+	}
+}
+
+void connection::set_wal_handler() {
+	sqlite3_wal_hook(handle, nullptr, nullptr);
+	if (callbacks)
+		callbacks->wal_handler.reset();
+}
+
+void connection::wal_autocheckpoint(int frames) {
+	int rv = sqlite3_wal_autocheckpoint(handle, frames);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	if (callbacks)
+		callbacks->wal_handler.reset();
+}
+
+std::pair<int, int> connection::wal_checkpoint(const char *dbname, int emode) {
+	int log, ckpt;
+	int rv = sqlite3_wal_checkpoint_v2(handle, dbname, emode, &log, &ckpt);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return std::make_pair(log, ckpt);
+}
+
+std::pair<int, int> connection::wal_checkpoint_passive(const char *dbname) {
+	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_PASSIVE);
+}
+
+std::pair<int, int> connection::wal_checkpoint_full(const char *dbname) {
+	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_FULL);
+}
+
+std::pair<int, int> connection::wal_checkpoint_restart(const char *dbname) {
+	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_RESTART);
 }
 
 extern "C"

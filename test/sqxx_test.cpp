@@ -271,5 +271,17 @@ BOOST_AUTO_TEST_CASE(create_function) {
 	BOOST_CHECK(called);
 }
 
+BOOST_AUTO_TEST_CASE(create_aggregate) {
+	tab ctx;
+	int called = 0;
+	ctx.conn.create_aggregate("sum_custom", std::function<int (int, int)>([&](int acc, int i) {
+		called++;
+		return acc + i;
+	}), 0);
+	auto st1 = ctx.conn.run("select sum_custom(v) from items where id <= 1");
+	BOOST_CHECK_EQUAL(called, 2);
+	BOOST_CHECK_EQUAL(st1.val<int>(0), 33);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

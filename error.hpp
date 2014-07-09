@@ -1,8 +1,8 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(SQXX_DETAIL_HPP_INCLUDED)
-#define SQXX_DETAIL_HPP_INCLUDED
+#if !defined(SQXX_ERROR_HPP_INCLUDED)
+#define SQXX_ERROR_HPP_INCLUDED
 
 #include "sqxx.hpp"
 
@@ -28,7 +28,13 @@ public:
 	recent_error(sqlite3 *handle);
 };
 
+void set_callback_exception_handler(const char *cbname);
+
+//namespace detail {
+	void handle_callback_exception(const char *cbname);
+//}
+
 } // namespace sqxx
 
-#endif // SQXX_DETAIL_HPP_INCLUDED
+#endif // SQXX_ERROR_HPP_INCLUDED
 

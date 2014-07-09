@@ -44,5 +44,59 @@ int status(int op, int *current, int *highwater, bool reset);
  */
 bool threadsafe();
 
+/**
+ * Check if a sqlite3 C library compilation option was used.
+ *
+ * If the underlying C library was compiled with `SQLITE_OMIT_COMPILEOPTION_DIAGS`,
+ * calling this function will lead to linker errors.
+ *
+ * Wraps [`sqlite3_status()`](http://www.sqlite.org/c3ref/status.html)
+ */
+int compileoption_used(const char *name);
+int compileoption_used(const std::string &name) {
+	compileoption_used(name.c_str());
+}
+
+/**
+ * Check which sqlite3 C library compilation options were used.
+ *
+ * If the underlying C library was compiled with `SQLITE_OMIT_COMPILEOPTION_DIAGS`,
+ * calling this function will lead to linker errors.
+ *
+ * Wraps [`sqlite3_status()`](http://www.sqlite.org/c3ref/status.html)
+ */
+const char* compileoption_get(int nr);
+
+/**
+ * Determines if a statement is complete.
+ *
+ * Wraps [`sqlite3_complete()`](http://www.sqlite.org/c3ref/complete.html)
+ */
+bool complete(const char *sql);
+bool complete(const std::string &sql) {
+	return complete(sql.c_str());
+}
+
+/**
+ * Memory allocator statistics
+ *
+ * Wraps [`sqlite3_memory_used()`](http://www.sqlite.org/c3ref/memory_highwater.html)
+ */
+uint64_t memory_used();
+
+/**
+ * Memory allocator statistics
+ *
+ * Wraps [`sqlite3_memory_highwater()`](http://www.sqlite.org/c3ref/memory_highwater.html)
+ */
+uint64_t memory_highwater(bool reset=false);
+
+/**
+ * Pseuso-random number generator
+ *
+ * Wraps [`sqlite3_randomness()`](http://www.sqlite.org/c3ref/randomness.html)
+ */
+void randomness(int size, void *buf);
+
 } // namespace sqxx
 

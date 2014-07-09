@@ -2,7 +2,7 @@
 // (c) 2013 Stephan Hohe
 
 #include "sqxx.hpp"
-#include "detail.hpp"
+#include "error.hpp"
 #include <sqlite3.h>
 #include <cstring>
 #include <iostream>

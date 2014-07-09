@@ -18,6 +18,7 @@ except ImportError:
 src = Split('''
 	parameter.cpp
 	column.cpp
+	config.cpp
 	context.cpp
 	statement.cpp
 	connection.cpp

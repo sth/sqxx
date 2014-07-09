@@ -33,5 +33,29 @@ bool threadsafe() {
 	retunr sqlite3_threadsafe();
 }
 
+int compileoption_used(const char *name) {
+	return sqlite3_compileoption_used(name);
+}
+
+const char* compileoption_get(int nr) {
+	return sqlite3_compileoption_get(nr);
+}
+
+bool complete(const char *sql) {
+	return sqlite3_complete(sql);
+}
+
+uint64_t memory_used() {
+	return sqlite3_memory_used();
+}
+
+uint64_t memory_highwater(bool reset) {
+	return sqlite3_memory_highwater(reset);
+}
+
+void randomness(int size, void *buf) {
+	sqlite3_randomness(size, buf);
+}
+
 } // namespace sqxx
 

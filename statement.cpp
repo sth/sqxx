@@ -3,7 +3,7 @@
 
 #include "statement.hpp"
 #include "sqxx.hpp"
-#include "detail.hpp"
+#include "error.hpp"
 #include <sqlite3.h>
 
 namespace sqxx {
