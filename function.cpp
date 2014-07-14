@@ -1,7 +1,7 @@
 
 // (c) 2013, 2014 Stephan Hohe
 
-#include "func.hpp"
+#include "function.hpp"
 #include "sqxx.hpp"
 #include "value.hpp"
 #include "error.hpp"

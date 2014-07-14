@@ -15,7 +15,7 @@ src = Split('''
 	sqxx.cpp
 	blob.cpp
 	backup.cpp
-	func.cpp
+	function.cpp
 	value.cpp
    ''')
 

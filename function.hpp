@@ -1,8 +1,8 @@
 
 // (c) 2013 Stephan Hohe
 
-#if !defined(SQXX_FUNC_HPP_INCLUDED)
-#define SQXX_FUNC_HPP_INCLUDED
+#if !defined(SQXX_FUNCTION_HPP_INCLUDED)
+#define SQXX_FUNCTION_HPP_INCLUDED
 
 #include "connection.hpp"
 #include "value.hpp"
@@ -247,5 +247,5 @@ void connection::create_aggregate_reduce(const char *name, Result zero, Callable
 
 } // namespace sqxx
 
-#endif // SQXX_FUNC_HPP_INCLUDED
+#endif // SQXX_FUNCTION_HPP_INCLUDED
 
