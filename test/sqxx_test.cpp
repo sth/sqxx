@@ -241,6 +241,7 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 
 	std::vector<int> data;
 	for (auto i : st) {
+		i = i; // suppress "unused variable" warning
 		data.push_back(st.val<int>(0));
 	}
 
@@ -273,14 +274,47 @@ BOOST_AUTO_TEST_CASE(create_function) {
 
 BOOST_AUTO_TEST_CASE(create_aggregate) {
 	tab ctx;
-	int called = 0;
-	ctx.conn.create_aggregate("sum_custom", std::function<int (int, int)>([&](int acc, int i) {
+	int called;
+
+	// Single parameter aggregate
+	called = 0;
+	ctx.conn.create_aggregate("sqsum", [&called](int &sum, int v) {
+		sum += v;
+		called++;
+	}, [](const int &sum) -> int {
+		return sum * sum;
+	}, 0);
+	auto st1 = ctx.conn.run("select sqsum(v) from items where id <= 2");
+	BOOST_CHECK_EQUAL(called, 2);
+	BOOST_CHECK_EQUAL(st1.val<int>(0), (11+22)*(11+22));
+
+	// Single parameter aggregate, with starting value != 0
+	ctx.conn.create_aggregate("sqsum10", [](int &sum, int v) {
+		sum += v;
+	}, [](const int &sum) -> int {
+		return sum * sum;
+	}, 10);
+	auto st2 = ctx.conn.run("select sqsum10(v) from items where id <= 2");
+	BOOST_CHECK_EQUAL(st2.val<int>(0), (10+11+22)*(10+11+22));
+
+	// Multi parameter aggregate
+	ctx.conn.create_aggregate("aggr", [](int &sum, int v, int w) {
+		sum += v*w;
+	}, [](const int &sum) -> int {
+		return sum + 5;
+	}, 0);
+	auto st3 = ctx.conn.run("select aggr(v, v+1) from items where id <= 2");
+	BOOST_CHECK_EQUAL(st3.val<int>(0), 11*12 + 22*23 + 5);
+
+	// Simple "reduce style" aggregate
+	called = 0;
+	ctx.conn.create_aggregate_reduce("rsum", [&](int acc, int i) -> int {
 		called++;
 		return acc + i;
-	}), 0);
-	auto st1 = ctx.conn.run("select sum_custom(v) from items where id <= 1");
+	}, 0);
+	auto st4 = ctx.conn.run("select rsum(v) from items where id <= 2");
 	BOOST_CHECK_EQUAL(called, 2);
-	BOOST_CHECK_EQUAL(st1.val<int>(0), 33);
+	BOOST_CHECK_EQUAL(st4.val<int>(0), 33);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

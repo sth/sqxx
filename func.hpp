@@ -49,7 +49,7 @@ struct apply_value_array_st {
 template<int I, typename R, typename Fun>
 struct apply_value_array_st<I, I, R, Fun> {
 	template<typename... Values>
-	static R apply(Fun f, sqlite3_value **argv, Values... args) {
+	static R apply(Fun f, sqlite3_value** /*argv*/, Values... args) {
 		return f(std::forward<Values>(args)...);
 	}
 };
@@ -145,65 +145,115 @@ struct aggregate_data_c : aggregate_data {
 };
 */
 
-template<typename T>
-struct unplace_ptr {
-	T *ptr;
-	unplace_ptr(T *ptr_arg) : ptr(ptr_arg) {
+template<typename S>
+struct aggregate_state {
+	S state;
+	bool initialized;
+	aggregate_state(const S &zero) : state(zero), initialized(true) {
 	}
-	~unplace_ptr() {
+};
+
+// A smart pointer that takes ownership of the pointed-to object, but not the
+// pointed-to memory. When the `ownedobj_ptr<>` goes out of scope, if calls
+// the pointed-to object's destructor, but doesn't free the associated memory.
+//
+// This is useful when an object is stored in memory that is managed by sqlite.
+//
+// TODO: Use std::unique_ptr<> with custom deleter?
+/*
+template<typename T>
+struct ownedobj_ptr {
+	T *ptr;
+	ownedobj_ptr(T *ptr_arg) : ptr(ptr_arg) {
+	}
+	~ownedobj_ptr() {
 		if (ptr) {
-			ptr->~T();
+			ptr->~aggregate_state();
 		}
 	}
 	T& operator*() {
 		return *ptr;
 	}
+	T* operator->() {
+		return ptr;
+	}
 	operator bool() {
-		return *ptr;
+		return ptr;
 	}
 };
-	
+*/
+
+template<typename T>
+struct destruct_only {
+	void operator()(T *ptr) {
+		if (ptr) {
+			ptr->~T();
+		}
+	}
+};
+
+template<typename T>
+using ownedobj_ptr = std::unique_ptr<T, destruct_only<T>>;
 
 template<size_t NArgs, typename S, typename R, typename... Ps>
-struct aggregate_data_t : aggregate_data {
+class aggregate_data_t : public aggregate_data {
+private:
 	typedef std::function<void (S&, Ps...)> stepfun_t;
 	stepfun_t stepfun;
 	typedef std::function<R (const S&)> finalfun_t;
 	finalfun_t finalfun;
 	const S state_zero;
 
+public:
 	aggregate_data_t(const stepfun_t &stepfun_arg, const finalfun_t &finalfun_arg, const S &state_zero_arg)
 		: stepfun(stepfun_arg), finalfun(finalfun_arg), state_zero(state_zero_arg) {
 	}
 
-	S& get_state_create(sqlite3_context *handle) {
-		S *state = reinterpret_cast<S*>(
-				sqlite3_aggregate_context(handle, sizeof(S))
+private:
+	// Returns the aggregation state, creating it if it doesn't exist yet.
+	aggregate_state<S>* get_state_create(sqlite3_context *handle) {
+		aggregate_state<S> *as = reinterpret_cast<aggregate_state<S>*>(
+				sqlite3_aggregate_context(handle, sizeof(aggregate_state<S>))
 			);
-		if (!state) {
+		if (!as) {
 			throw std::bad_alloc();
 		}
-		new(state) S(state_zero);
-		return *state;
-	}
-	S* get_state_existing(sqlite3_context *handle) {
-		return reinterpret_cast<S*>(
-				sqlite3_aggregate_context(handle, 0)
-			);
+		// Sqlite zeros freshly allocated memory, so `as->initialized` will
+		// start out as `false` if we haven't called the constructor yet.
+		if (!as->initialized) {
+			// Construct object, with a state copied from `state_zero`
+			new(as) aggregate_state<S>(state_zero);
+		}
+		return as;
 	}
 
+	// Returns the aggregation state, if there is any
+	aggregate_state<S>* get_state_existing(sqlite3_context *handle) {
+		aggregate_state<S> *as = reinterpret_cast<aggregate_state<S>*>(
+				sqlite3_aggregate_context(handle, 0)
+			);
+		return as;
+	}
+
+public:
 	void step_call(context &ctx, int nargs, sqlite3_value **values) override {
-		apply_value_array<NArgs, void>([this,&ctx](Ps... ps){ stepfun(get_state_create(ctx.raw()), ps...); }, values);
+		if (nargs != NArgs) {
+			ctx.result_error_code(SQLITE_MISUSE);
+			return;
+		}
+		aggregate_state<S> *as = get_state_create(ctx.raw());
+		apply_value_array<NArgs, void>([this,&as](Ps... ps){ stepfun(as->state, std::forward<Ps>(ps)...); }, values);
 		//std::vector<value> vs(values, values+nargs);
 	}
 	void final_call(context &ctx) override {
 		// Take ownership of state, deleting it on return
-		unplace_ptr<S> state = get_state_existing(ctx.raw());
-		if (state) {
-			ctx.result<R>(finalfun(*state));
+		ownedobj_ptr<aggregate_state<S>> as(get_state_existing(ctx.raw()));
+		//std::unique_ptr<aggregate_state<S>, destruct_only<aggregate_state<S>>> as(get_state_existing(ctx.raw()));
+		if (as) {
+			ctx.result(finalfun(as->state));
 		}
 		else {
-			ctx.result<R>(finalfun(state_zero));
+			ctx.result(finalfun(state_zero));
 		}
 	}
 };
@@ -238,7 +288,7 @@ void connection::create_aggregate(const char *name,
 }
 
 template<typename Result, typename... Args>
-void connection::create_aggregate(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero) {
+void connection::create_aggregate_reduce(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero) {
 	// TODO: does [=aggregator](){ ... } capture aggregator by-copy?
 	const std::function<Result (Result, Args...)> a(aggregator);
 	create_aggregate(name,
@@ -249,8 +299,8 @@ void connection::create_aggregate(const char *name, const std::function<Result (
 }
 
 template<typename Result, typename Callable>
-void connection::create_aggregate(const char *name, Callable aggregator, Result zero) {
-	create_aggregate(name, to_stdfunction(aggregator), zero);
+void connection::create_aggregate_reduce(const char *name, Callable aggregator, Result zero) {
+	create_aggregate_reduce(name, to_stdfunction(std::forward<Callable>(aggregator)), zero);
 }
 
 } // namespace sqxx

@@ -389,38 +389,9 @@ private:
 	void create_aggregate_p(const char *name, int nargs, detail::aggregate_data *aggrdata);
 
 public:
-	//template<typename Aggregator>
-	//void create_aggregate(const char *name, Aggregator a);
-
-	//template<typename AggregateState>
-	//using aggregate_final_t = std::function<void (AggregateData*)>;
-
-	//template<typename AggregateState = void, typename StepCallable, typename FinalCallable>
-	//void create_aggregate(const char *name, StepCallable step, FinalCallable final);
-
-	//typename<typename AggregateState, typename Callable>
-	//void create_aggregate_functor(Callable factory);
-
-	/*
-	// TODO
-	template<typename AggregateData>
-	void create_aggregate(const char *name, const std::function<AggregateData* ()> &factory) {
-	}
-
-	template<typename AggregateFactory>
-	void create_aggregate_mng(const char *name, const std::function<AggregateData* ()> &factory) {
-	}
-
-	template<typename Aggregator>
-	void create_aggregate(const char *name, aggregate_step_t, aggregate_final_t);
-
-	template<typename AggregatorFactory>
-	void create_aggregate(const char *name, AggregatorFactory f);
-
-	template<typename Aggregator>
-	void create_aggregate_class(const char *name);
-	*/
-
+	/**
+	 * Register an aggregation function
+	 */
 	template<typename State, typename Result, typename... Args>
 	void create_aggregate(const char *name,
 			const std::function<void (State&, Args...)> &stepfun,
@@ -430,11 +401,14 @@ public:
 	template<typename State, typename StepCallable, typename FinalCallable>
 	void create_aggregate(const char *name, StepCallable stepfun, FinalCallable finalfun, State zero); 
 
+	/**
+	 * Register a simple accumulator/reduce function as an aggregate
+	 */
 	template<typename Result, typename... Args>
-	void create_aggregate(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero);
+	void create_aggregate_reduce(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero);
 
 	template<typename Result, typename Callable>
-	void create_aggregate(const char *name, Callable aggregator, Result zero);
+	void create_aggregate_reduce(const char *name, Callable aggregator, Result zero);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }

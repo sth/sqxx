@@ -1,5 +1,5 @@
 
-// (c) 2013 Stephan Hohe
+// (c) 2013, 2014 Stephan Hohe
 
 #include "func.hpp"
 #include "sqxx.hpp"
@@ -12,23 +12,23 @@
 namespace sqxx {
 
 extern "C"
-void sqxx_function_call(sqlite3_context *ctx, int argc, sqlite3_value** argv) {
-	detail::function_data *data = reinterpret_cast<detail::function_data*>(sqlite3_user_data(ctx));
-	context c(ctx);
+void sqxx_function_call(sqlite3_context *handle, int argc, sqlite3_value** argv) {
+	detail::function_data *data = reinterpret_cast<detail::function_data*>(sqlite3_user_data(handle));
+	context ctx(handle);
 	try {
-		data->call(c, argc, argv);
+		data->call(ctx, argc, argv);
 	}
 	catch (const error &e) {
-		c.result_error_code(e.code);
+		ctx.result_error_code(e.code);
 	}
 	catch (const std::bad_alloc &) {
-		sqlite3_result_error_nomem(ctx);
+		ctx.result_error_nomem();
 	}
 	catch (const std::exception &e) {
-		sqlite3_result_error(ctx, e.what(), -1);
+		ctx.result_error(e.what());
 	}
 	catch (...) {
-		sqlite3_result_error_code(ctx, SQLITE_MISUSE);
+		ctx.result_error_code(SQLITE_MISUSE);
 	}
 }
 
@@ -43,51 +43,51 @@ void connection::create_function_p(const char *name, int nargs, detail::function
 	rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, fdat,
 			sqxx_function_call, nullptr, nullptr, sqxx_function_destroy);
 	if (rv != SQLITE_OK) {
-		delete fdat;
+		// Registered destructor is called automatically, no need to delete |fdat| ourselves
 		throw static_error(rv);
 	}
 }
 
 
 extern "C"
-void sqxx_call_aggregate_step(sqlite3_context *ctx, int argc, sqlite3_value** argv) {
-	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(ctx));
-	context c(ctx);
+void sqxx_call_aggregate_step(sqlite3_context *handle, int argc, sqlite3_value** argv) {
+	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(handle));
+	context ctx(handle);
 	try {
-		data->step_call(c, argc, argv);
+		data->step_call(ctx, argc, argv);
 	}
 	catch (const error &e) {
-		c.result_error_code(e.code);
+		ctx.result_error_code(e.code);
 	}
 	catch (const std::bad_alloc &) {
-		c.result_error_nomem();
+		ctx.result_error_nomem();
 	}
 	catch (const std::exception &e) {
-		c.result_error(e.what());
+		ctx.result_error(e.what());
 	}
 	catch (...) {
-		c.result_error_code(SQLITE_MISUSE);
+		ctx.result_error_code(SQLITE_MISUSE);
 	}
 }
 
 extern "C"
-void sqxx_call_aggregate_final(sqlite3_context *ctx) {
-	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(ctx));
-	context c(ctx);
+void sqxx_call_aggregate_final(sqlite3_context *handle) {
+	detail::aggregate_data *data = reinterpret_cast<detail::aggregate_data*>(sqlite3_user_data(handle));
+	context ctx(handle);
 	try {
-		data->final_call(c);
+		data->final_call(ctx);
 	}
 	catch (const error &e) {
-		c.result_error_code(e.code);
+		ctx.result_error_code(e.code);
 	}
 	catch (const std::bad_alloc &) {
-		c.result_error_nomem();
+		ctx.result_error_nomem();
 	}
 	catch (const std::exception &e) {
-		c.result_error(e.what());
+		ctx.result_error(e.what());
 	}
 	catch (...) {
-		c.result_error_code(SQLITE_MISUSE);
+		ctx.result_error_code(SQLITE_MISUSE);
 	}
 }
 
@@ -101,8 +101,9 @@ void connection::create_aggregate_p(const char *name, int nargs, detail::aggrega
 	int rv;
 	rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, adat,
 			nullptr, sqxx_call_aggregate_step, sqxx_call_aggregate_final, sqxx_call_aggregate_destroy);
+	// TODO: check error semantic of C function
 	if (rv != SQLITE_OK) {
-		delete adat;
+		// Registered destructor is called automatically, no need to delete |adat| ourselves
 		throw static_error(rv);
 	}
 }

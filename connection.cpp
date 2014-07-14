@@ -610,7 +610,7 @@ int sqxx_call_wal_handler(void *data, sqlite3 *conn, const char *dbname, int pag
 	}
 	catch (...) {
 		// TODO: Better exception handling?
-		handle_callback_exception("busy handler");
+		handle_callback_exception("wal handler");
 		return SQLITE_ERROR;
 	}
 }

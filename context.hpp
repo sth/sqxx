@@ -13,6 +13,7 @@ namespace sqxx {
 /** Wraps `struct sqlite3_context` */
 class context {
 private:
+	// UNOWNED
 	sqlite3_context *handle;
 
 public:
@@ -25,12 +26,6 @@ public:
 	 * Wraps [`sqlite3_result_null()`](http://www.sqlite.org/c3ref/result_blob.html)
 	 */
 	void result_null();
-	/**
-	 * Sets result to error SQLITE_MISUSE
-	 *
-	 * Wraps [`sqlite3_result_error_code(SQLITE_MISUSE)`](http://www.sqlite.org/c3ref/result_blob.html)
-	 */
-	void result_misuse();
 	/**
 	 * Sets result to error with the given message
 	 *
@@ -55,6 +50,12 @@ public:
 	 * Wraps [`sqlite3_result_error_toobig()`](http://www.sqlite.org/c3ref/result_blob.html)
 	 */
 	void result_error_toobig();
+	/**
+	 * Sets result to error SQLITE_MISUSE
+	 *
+	 * Wraps [`sqlite3_result_error_code(SQLITE_MISUSE)`](http://www.sqlite.org/c3ref/result_blob.html)
+	 */
+	void result_misuse();
 
 	/**
 	 * Sets result to given value

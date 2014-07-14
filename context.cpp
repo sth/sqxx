@@ -1,5 +1,5 @@
 
-// (c) 2013 Stephan Hohe
+// (c) 2013, 2014 Stephan Hohe
 
 #include "context.hpp"
 #include <sqlite3.h>
