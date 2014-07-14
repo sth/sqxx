@@ -2,18 +2,8 @@
 env = Environment()
 
 env.Append(
-      CXXFLAGS = ['-std=c++11', '-Wall'] # , '-Wextra']
+      CXXFLAGS = ['-std=c++11', '-Wall'],
    )
-
-try:
-	import buildsys
-	buildsys.setup(env)
-	env.BConfigure()
-	#env.BRequire('callable')
-except ImportError:
-	env.Append(
-			CPPPATH = ['../callable']
-		)
 
 src = Split('''
 	parameter.cpp
