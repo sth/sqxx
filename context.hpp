@@ -10,6 +10,11 @@ struct sqlite3_context;
 
 namespace sqxx {
 
+// Aggregate function interoperability
+namespace detail {
+	class aggregate_data;
+}
+
 /** Wraps `struct sqlite3_context` */
 class context {
 private:
@@ -55,7 +60,7 @@ public:
 	 *
 	 * Wraps [`sqlite3_result_error_code(SQLITE_MISUSE)`](http://www.sqlite.org/c3ref/result_blob.html)
 	 */
-	void result_misuse();
+	void result_error_misuse();
 
 	/**
 	 * Sets result to given value
@@ -77,6 +82,12 @@ public:
 	void result(std::optional<R> value);
 	*/
 
+private:
+	// This is used internally by our aggregate functions
+	friend class detail::aggregate_data;
+	void* aggregate_context(int bytes);
+
+public:
 	/**
 	 * Returns a raw pointer to the underlying `struct sqlite3_context`.
 	 */

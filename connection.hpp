@@ -7,7 +7,6 @@
 #include "datatypes.hpp"
 #include <memory>
 #include <functional>
-#include "callable/callable.hpp"
 
 struct sqlite3;
 
@@ -413,6 +412,7 @@ public:
 	sqlite3* raw() { return handle; }
 };
 
+
 template<typename Callable>
 void connection::create_collation(const char *name, Callable coll) {
 	collation_function_t stdfun(coll);
@@ -427,11 +427,6 @@ template<typename Callable>
 void connection::create_collation_stdstr(const char *name, Callable coll) {
 	collation_function_stdstr_t stdfun(coll);
 	create_collation_stdstr(name, stdfun);
-}
-
-template<typename Callable>
-void connection::create_function(const char *name, Callable fun) {
-	create_function(name, to_stdfunction(std::forward<Callable>(fun)));
 }
 
 } // namespace sqxx

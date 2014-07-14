@@ -6,7 +6,7 @@
 
 namespace sqxx {
 
-void context::result_misuse() {
+void context::result_error_misuse() {
 	result_error_code(SQLITE_MISUSE);
 }
 
@@ -25,6 +25,10 @@ void context::result_error_nomem() {
 template<>
 void context::result<int>(int value) {
 	sqlite3_result_int(handle, value);
+}
+
+void* context::aggregate_context(int bytes) {
+	return sqlite3_aggregate_context(handle, bytes);
 }
 
 sqlite3_context* context::raw() {

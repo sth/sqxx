@@ -4,32 +4,16 @@
 #if !defined(SQXX_FUNC_HPP_INCLUDED)
 #define SQXX_FUNC_HPP_INCLUDED
 
-#include "datatypes.hpp"
+#include "connection.hpp"
 #include "value.hpp"
 #include "context.hpp"
-#include "sqxx.hpp"
+#include "callable/callable.hpp"
 #include <functional>
-#include <sqlite3.h>
+#include <memory>
 
 namespace sqxx {
 
 namespace detail {
-
-// count number of types
-
-template<typename... Ts>
-struct type_count;
-
-template<>
-struct type_count<> {
-	static const size_t value = 0;
-};
-
-template<typename T1, typename... Ts>
-struct type_count<T1, Ts...> {
-	static const size_t value = 1 + type_count<Ts...>::value;
-};
-
 
 // Apply an array of sqlite3_value's to a function
 
@@ -56,8 +40,11 @@ struct apply_value_array_st<I, I, R, Fun> {
 
 template<int N, typename R, typename Fun>
 R apply_value_array(Fun f, sqlite3_value **argv) {
-	return apply_value_array_st<0, N, R, Fun>::apply(f, argv);
+	return apply_value_array_st<0, N, R, Fun>::apply(std::forward<Fun>(f), argv);
 }
+
+
+// Data associated with a function
 
 struct function_data {
 	virtual ~function_data() {
@@ -74,7 +61,7 @@ struct function_data_t : function_data {
 
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
 		if (argc != NArgs) {
-			ctx.result_misuse();
+			ctx.result_error_misuse();
 		}
 		else {
 			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
@@ -91,7 +78,7 @@ struct function_data_gen_t : function_data {
 
 	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
 		if (argc != NArgs) {
-			ctx.result_misuse();
+			ctx.result_error_misuse();
 		}
 		else {
 			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
@@ -99,51 +86,20 @@ struct function_data_gen_t : function_data {
 	}
 };
 
+
+// Data associated with an aggregate
+
 struct aggregate_data {
 	virtual ~aggregate_data() {}
 	virtual void step_call(context &ctx, int nargs, sqlite3_value **values) = 0;
 	virtual void final_call(context &ctx) = 0;
-};
 
-/*
-template<class Aggregator>
-struct aggregate_data_c : aggregate_data {
-	const Aggregator zero_aggr;
-
-	aggregate_data_c(const Aggregator &zero_aggr_arg) : zero_aggr(zero_aggr_arg) {
-	}
-
-	Aggregator& get_aggr_create(sqlite3_context *handle) {
-		Aggregator *aggr = reinterpret_cast<Aggregator*>(
-				sqlite3_aggregate_context(handle, sizeof(Aggregator))
-			);
-		if (!aggr) {
-			throw std::bad_alloc();
-		}
-		new(aggr) Aggregator(zero_aggr);
-		return *aggr;
-	}
-	const Aggregator& get_aggr_existing(sqlite3_context *handle) {
-		Aggregator *aggr = reinterpret_cast<Aggregator*>(
-				sqlite3_aggregate_context(handle, sizeof(Aggregator))
-			);
-		if (aggr) 
-			return *aggr;
-		else
-			return zero_aggr;
-	}
-	void step(sqlite3_context *handle, int nargs, sqlite3_value **values) override {
-		static const size_t NArgs = callable_traits<decltype(Aggregator::step)>::nargs - 1;
-		apply_array(get_aggr_create(handle)->step, nargs, values);
-		//std::vector<value> vs(values, values+nargs);
-	}
-	void final(sqlite3_context *handle) override {
-		// Take ownership of aggr, deleting it on return
-		std::unique_ptr<Aggregator> aggr(get_aggr_existing(handle));
-		context(handle).result(const_cast<const Aggregator>(*aggr).final());
+protected:
+	// forwarding for friend access to context::aggregate_context()
+	void *get_aggregate_context(context &ctx, int bytes) {
+		return ctx.aggregate_context(bytes);
 	}
 };
-*/
 
 template<typename S>
 struct aggregate_invocation_data {
@@ -189,9 +145,9 @@ public:
 
 private:
 	// Returns the aggregation state, creating it if it doesn't exist yet.
-	invocation_data* get_state_create(sqlite3_context *handle) {
+	invocation_data* get_state_create(context &ctx) {
 		invocation_data *as = reinterpret_cast<invocation_data*>(
-				sqlite3_aggregate_context(handle, sizeof(invocation_data))
+				this->get_aggregate_context(ctx, sizeof(invocation_data))
 			);
 		if (!as) {
 			throw std::bad_alloc();
@@ -206,11 +162,11 @@ private:
 	}
 
 	// Returns the aggregation state, if there is any
-	invocation_data* get_state_existing(sqlite3_context *handle) {
+	invocation_data* get_state_existing(context &ctx) {
 		// Calling with size 0. We'll get any existing daat, or a nullptr if
 		// there isn't any.
 		invocation_data *as = reinterpret_cast<invocation_data*>(
-				sqlite3_aggregate_context(handle, 0)
+				this->get_aggregate_context(ctx, 0)
 			);
 		return as;
 	}
@@ -218,16 +174,16 @@ private:
 public:
 	void step_call(context &ctx, int nargs, sqlite3_value **values) override {
 		if (nargs != NArgs) {
-			ctx.result_error_code(SQLITE_MISUSE);
+			ctx.result_error_misuse();
 			return;
 		}
-		invocation_data *as = get_state_create(ctx.raw());
+		invocation_data *as = get_state_create(ctx);
 		apply_value_array<NArgs, void>([this,&as](Ps... ps){ stepfun(as->state, std::forward<Ps>(ps)...); }, values);
 		//std::vector<value> vs(values, values+nargs);
 	}
 	void final_call(context &ctx) override {
 		// Take ownership of state, deleting it on return
-		ownedobj_ptr<invocation_data> as(get_state_existing(ctx.raw()));
+		ownedobj_ptr<invocation_data> as(get_state_existing(ctx));
 		if (as) {
 			// We have state
 			ctx.result(finalfun(as->state));
@@ -239,21 +195,29 @@ public:
 	}
 };
 
-
 } // namespace detail
+
+
+// Implementation of `connection` member functions
 
 template<typename R, typename... Ps>
 void connection::create_function(const char *name, const std::function<R (Ps...)> &fun) {
-	static const size_t NArgs = detail::type_count<Ps...>::value;
+	static const size_t NArgs = parameter_pack_traits<Ps...>::count;
 	create_function_p(name, NArgs, new detail::function_data_t<NArgs, R, Ps...>(fun));
 }
+
+template<typename Callable>
+void connection::create_function(const char *name, Callable fun) {
+	create_function(name, to_stdfunction(std::forward<Callable>(fun)));
+}
+
 
 template<typename State, typename Result, typename... Args>
 void connection::create_aggregate(const char *name,
 		State zero,
 		const std::function<void (State&, Args...)> &stepfun,
 		const std::function<Result (const State &)> &finalfun) {
-	static const size_t NArgs = detail::type_count<Args...>::value;
+	static const size_t NArgs = parameter_pack_traits<Args...>::count;
 	create_aggregate_p(name, NArgs, new detail::aggregate_data_t<NArgs, State, Result, Args...>(zero, stepfun, finalfun));
 }
 
@@ -269,7 +233,6 @@ void connection::create_aggregate(const char *name,
 
 template<typename Result, typename... Args>
 void connection::create_aggregate_reduce(const char *name, Result zero, const std::function<Result (Result, Args...)> &aggregator) {
-	// TODO: does [=aggregator](){ ... } capture aggregator by-copy?
 	const std::function<Result (Result, Args...)> a(aggregator);
 	create_aggregate(name, zero,
 			[a](Result &state, Args... args) { state = a(std::forward<Result&>(state), std::forward<Args...>(args...)); },
