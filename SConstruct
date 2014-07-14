@@ -2,7 +2,7 @@
 env = Environment()
 
 env.Append(
-      CXXFLAGS = ['-std=c++11', '-Wall']
+      CXXFLAGS = ['-std=c++11', '-Wall'] # , '-Wextra']
    )
 
 try:

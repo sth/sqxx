@@ -393,22 +393,21 @@ public:
 	 * Register an aggregation function
 	 */
 	template<typename State, typename Result, typename... Args>
-	void create_aggregate(const char *name,
+	void create_aggregate(const char *name, State zero,
 			const std::function<void (State&, Args...)> &stepfun,
-			const std::function<Result (const State &)> &finalfun,
-			State zero);
+			const std::function<Result (const State &)> &finalfun);
 
 	template<typename State, typename StepCallable, typename FinalCallable>
-	void create_aggregate(const char *name, StepCallable stepfun, FinalCallable finalfun, State zero); 
+	void create_aggregate(const char *name, State zero, StepCallable stepfun, FinalCallable finalfun);
 
 	/**
 	 * Register a simple accumulator/reduce function as an aggregate
 	 */
 	template<typename Result, typename... Args>
-	void create_aggregate_reduce(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero);
+	void create_aggregate_reduce(const char *name, Result zero, const std::function<Result (Result, Args...)> &aggregator);
 
 	template<typename Result, typename Callable>
-	void create_aggregate_reduce(const char *name, Callable aggregator, Result zero);
+	void create_aggregate_reduce(const char *name, Result zero, Callable aggregator);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }

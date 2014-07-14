@@ -146,43 +146,19 @@ struct aggregate_data_c : aggregate_data {
 */
 
 template<typename S>
-struct aggregate_state {
+struct aggregate_invocation_data {
 	S state;
 	bool initialized;
-	aggregate_state(const S &zero) : state(zero), initialized(true) {
+	aggregate_invocation_data(const S &zero) : state(zero), initialized(true) {
 	}
 };
 
-// A smart pointer that takes ownership of the pointed-to object, but not the
-// pointed-to memory. When the `ownedobj_ptr<>` goes out of scope, if calls
-// the pointed-to object's destructor, but doesn't free the associated memory.
+// A std::unique_ptr<> variant that takes ownership of the pointed-to object,
+// but not the pointed-to memory. When the `ownedobj_ptr<>` goes out of scope,
+// if calls the pointed-to object's destructor, but doesn't free the
+// associated memory.
 //
 // This is useful when an object is stored in memory that is managed by sqlite.
-//
-// TODO: Use std::unique_ptr<> with custom deleter?
-/*
-template<typename T>
-struct ownedobj_ptr {
-	T *ptr;
-	ownedobj_ptr(T *ptr_arg) : ptr(ptr_arg) {
-	}
-	~ownedobj_ptr() {
-		if (ptr) {
-			ptr->~aggregate_state();
-		}
-	}
-	T& operator*() {
-		return *ptr;
-	}
-	T* operator->() {
-		return ptr;
-	}
-	operator bool() {
-		return ptr;
-	}
-};
-*/
-
 template<typename T>
 struct destruct_only {
 	void operator()(T *ptr) {
@@ -198,22 +174,24 @@ using ownedobj_ptr = std::unique_ptr<T, destruct_only<T>>;
 template<size_t NArgs, typename S, typename R, typename... Ps>
 class aggregate_data_t : public aggregate_data {
 private:
+	const S state_zero;
 	typedef std::function<void (S&, Ps...)> stepfun_t;
 	stepfun_t stepfun;
 	typedef std::function<R (const S&)> finalfun_t;
 	finalfun_t finalfun;
-	const S state_zero;
+
+	typedef aggregate_invocation_data<S> invocation_data;
 
 public:
-	aggregate_data_t(const stepfun_t &stepfun_arg, const finalfun_t &finalfun_arg, const S &state_zero_arg)
-		: stepfun(stepfun_arg), finalfun(finalfun_arg), state_zero(state_zero_arg) {
+	aggregate_data_t(const S &state_zero_arg, const stepfun_t &stepfun_arg, const finalfun_t &finalfun_arg)
+		: state_zero(state_zero_arg), stepfun(stepfun_arg), finalfun(finalfun_arg) {
 	}
 
 private:
 	// Returns the aggregation state, creating it if it doesn't exist yet.
-	aggregate_state<S>* get_state_create(sqlite3_context *handle) {
-		aggregate_state<S> *as = reinterpret_cast<aggregate_state<S>*>(
-				sqlite3_aggregate_context(handle, sizeof(aggregate_state<S>))
+	invocation_data* get_state_create(sqlite3_context *handle) {
+		invocation_data *as = reinterpret_cast<invocation_data*>(
+				sqlite3_aggregate_context(handle, sizeof(invocation_data))
 			);
 		if (!as) {
 			throw std::bad_alloc();
@@ -222,14 +200,16 @@ private:
 		// start out as `false` if we haven't called the constructor yet.
 		if (!as->initialized) {
 			// Construct object, with a state copied from `state_zero`
-			new(as) aggregate_state<S>(state_zero);
+			new(as) invocation_data(state_zero);
 		}
 		return as;
 	}
 
 	// Returns the aggregation state, if there is any
-	aggregate_state<S>* get_state_existing(sqlite3_context *handle) {
-		aggregate_state<S> *as = reinterpret_cast<aggregate_state<S>*>(
+	invocation_data* get_state_existing(sqlite3_context *handle) {
+		// Calling with size 0. We'll get any existing daat, or a nullptr if
+		// there isn't any.
+		invocation_data *as = reinterpret_cast<invocation_data*>(
 				sqlite3_aggregate_context(handle, 0)
 			);
 		return as;
@@ -241,18 +221,19 @@ public:
 			ctx.result_error_code(SQLITE_MISUSE);
 			return;
 		}
-		aggregate_state<S> *as = get_state_create(ctx.raw());
+		invocation_data *as = get_state_create(ctx.raw());
 		apply_value_array<NArgs, void>([this,&as](Ps... ps){ stepfun(as->state, std::forward<Ps>(ps)...); }, values);
 		//std::vector<value> vs(values, values+nargs);
 	}
 	void final_call(context &ctx) override {
 		// Take ownership of state, deleting it on return
-		ownedobj_ptr<aggregate_state<S>> as(get_state_existing(ctx.raw()));
-		//std::unique_ptr<aggregate_state<S>, destruct_only<aggregate_state<S>>> as(get_state_existing(ctx.raw()));
+		ownedobj_ptr<invocation_data> as(get_state_existing(ctx.raw()));
 		if (as) {
+			// We have state
 			ctx.result(finalfun(as->state));
 		}
 		else {
+			// There was no allocated state
 			ctx.result(finalfun(state_zero));
 		}
 	}
@@ -269,38 +250,36 @@ void connection::create_function(const char *name, const std::function<R (Ps...)
 
 template<typename State, typename Result, typename... Args>
 void connection::create_aggregate(const char *name,
+		State zero,
 		const std::function<void (State&, Args...)> &stepfun,
-		const std::function<Result (const State &)> &finalfun,
-		State zero) {
+		const std::function<Result (const State &)> &finalfun) {
 	static const size_t NArgs = detail::type_count<Args...>::value;
-	create_aggregate_p(name, NArgs, new detail::aggregate_data_t<NArgs, State, Result, Args...>(stepfun, finalfun, zero));
+	create_aggregate_p(name, NArgs, new detail::aggregate_data_t<NArgs, State, Result, Args...>(zero, stepfun, finalfun));
 }
 
 template<typename State, typename StepCallable, typename FinalCallable>
 void connection::create_aggregate(const char *name,
+		State zero,
 		StepCallable stepfun,
-		FinalCallable finalfun,
-		State zero) {
-	create_aggregate(name,
+		FinalCallable finalfun) {
+	create_aggregate(name, std::forward<State>(zero),
 			to_stdfunction(std::forward<StepCallable>(stepfun)),
-			to_stdfunction(std::forward<FinalCallable>(finalfun)),
-			std::forward<State>(zero));
+			to_stdfunction(std::forward<FinalCallable>(finalfun)));
 }
 
 template<typename Result, typename... Args>
-void connection::create_aggregate_reduce(const char *name, const std::function<Result (Result, Args...)> &aggregator, Result zero) {
+void connection::create_aggregate_reduce(const char *name, Result zero, const std::function<Result (Result, Args...)> &aggregator) {
 	// TODO: does [=aggregator](){ ... } capture aggregator by-copy?
 	const std::function<Result (Result, Args...)> a(aggregator);
-	create_aggregate(name,
+	create_aggregate(name, zero,
 			[a](Result &state, Args... args) { state = a(std::forward<Result&>(state), std::forward<Args...>(args...)); },
-			[](const Result &state) -> Result { return state; },
-			zero
+			[](const Result &state) -> Result { return state; }
 		);
 }
 
 template<typename Result, typename Callable>
-void connection::create_aggregate_reduce(const char *name, Callable aggregator, Result zero) {
-	create_aggregate_reduce(name, to_stdfunction(std::forward<Callable>(aggregator)), zero);
+void connection::create_aggregate_reduce(const char *name, Result zero, Callable aggregator) {
+	create_aggregate_reduce(name, zero, to_stdfunction(std::forward<Callable>(aggregator)));
 }
 
 } // namespace sqxx
