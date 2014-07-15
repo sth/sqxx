@@ -113,7 +113,9 @@ void config_covering_index_scan(bool enable) {
 }
 
 extern "C"
-void sqxx_call_config_sqllog_handler(void *data, sqlite3 *conn, const char *msg, int kind) {
+void sqxx_call_config_sqllog_handler(void *data, sqlite3* conn, const char *msg, int kind) {
+	// TODO: `conn` might be useful to have here, but we'd need a
+	// non-owning version.
 	sqllog_handler_t *fn = reinterpret_cast<sqllog_handler_t*>(data);
 	try {
 		(*fn)(/*conn,*/ msg, kind);

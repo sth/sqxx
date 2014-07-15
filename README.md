@@ -17,11 +17,12 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
 
 - Only minimal overhead over calling the C API functions directly
 - No pollution of the global namespace with sqlite symbols.
-- Access to raw sqlite handles to use C API functions directly, if
-  desired.
-- Register C++ functions/lambdas/... as SQL functions
+- Register C++ functions/lambdas/... as SQL functions or SQL aggregates
 - Register C++ functions/lambdas/... as sqlite3 callbacks/hooks
 - Exception safe C/C++ boundary for callbacks/...
+- Access to raw sqlite handles to use C API functions directly, if
+  desired. (In case some functionality you want to use is missing in
+  this C++ wrapper)
 
 
 ### Missing features
@@ -40,8 +41,7 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
     This feature seems to be very specific and not usually used in normal operation.
 	 (TODO: reference to sqlite docs)
 
-- Aggregation functions (in development)
-- Some implemented features are not covered by test cases and maybe untested:
+- Some implemented features are not covered by test cases and maybe untested/incomplete:
   - varags SQL functions
   - blob values
   - `sqlite3_backup*` wrappers

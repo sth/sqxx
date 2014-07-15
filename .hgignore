@@ -5,3 +5,5 @@ syntax: glob
 .scons*
 sqxx_test
 *.swp
+callable
+

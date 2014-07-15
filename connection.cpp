@@ -50,10 +50,10 @@ void handle_callback_exception(const char *cbname) {
 }
 
 struct collation_data_t {
-	connection &c;
+	connection &conn;
 	connection::collation_handler_t fn;
-	collation_data_t(connection &c_arg, const connection::collation_handler_t &fn_arg)
-		: c(c_arg), fn(fn_arg) {
+	collation_data_t(connection &conn_arg, const connection::collation_handler_t &fn_arg)
+		: conn(conn_arg), fn(fn_arg) {
 	}
 };
 
@@ -602,7 +602,10 @@ void connection::set_progress_handler() {
 
 
 extern "C"
-int sqxx_call_wal_handler(void *data, sqlite3 *conn, const char *dbname, int pages) {
+int sqxx_call_wal_handler(void *data, sqlite3* conn, const char *dbname, int pages) {
+	// We registered on a certain connection, and thats the connection we
+	// expect to get back here. So `conn` seems to be pretty useless here.
+	unused(conn);
 	connection::wal_handler_t *fn = reinterpret_cast<connection::wal_handler_t*>(data);
 	try {
 		(*fn)(dbname, pages);
@@ -662,11 +665,25 @@ std::pair<int, int> connection::wal_checkpoint_restart(const char *dbname) {
 }
 
 extern "C"
-void sqxx_call_collation_handler(void *data, sqlite3 *handle, int textrep, const char *name) {
-	collation_data_t *dat = reinterpret_cast<collation_data_t*>(data);
+void sqxx_call_collation_handler(void *data, sqlite3* conn, int textrep, const char *name) {
+	// We registered on a certain connection, and thats the connection we
+	// expect to get back here. So `conn` seems to be pretty useless here.
+	// 
+	// We could store a reference to the connection in collation_data_t and then
+	// check here if you got the right connection back
 	//assert(handle == dat->c.handle);
+	collation_data_t *dat = reinterpret_cast<collation_data_t*>(data);
 	try {
-		(dat->fn)(dat->c, name);
+		//if (textrep != SQLITE_UTF8) {
+		//	throw error("invalid collation encoding");
+		//}
+		//if (conn != data->c.handle) {
+		//	throw error("invalid connection");
+		//}
+
+		// We pass the connection here because the callback will need
+		// it to register the requested collation function
+		(dat->fn)(dat->conn, name);
 	}
 	catch (...) {
 		handle_callback_exception("collation handler");

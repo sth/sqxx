@@ -2,7 +2,7 @@
 env = Environment()
 
 env.Append(
-      CXXFLAGS = ['-std=c++11', '-Wall'],
+      CXXFLAGS = ['-std=c++11', '-Wall', '-Wextra'],
    )
 
 src = Split('''
@@ -19,18 +19,20 @@ src = Split('''
 	value.cpp
    ''')
 
-lib = env.Library('sqxx', src)
+env_lib = env.Clone()
+lib = env_lib.Library('sqxx', src)
+
+
+# tests
 
 test_src = Split('''
 	test/driver.cpp
    test/sqxx_test.cpp
    ''')
 
-
-# tests
-
 env_test = env.Clone()
 env_test.Append(
+		CXXFLAGS = ['-Wno-unused-parameter'],
 		CPPPATH = '.',
 		CPPDEFINES = ['BOOST_TEST_DYN_LINK'],
 		LIBS = ['boost_unit_test_framework', 'sqlite3']

@@ -38,6 +38,11 @@ void set_callback_exception_handler(const callback_exception_handler_t &handler)
 // Write exeptions to std::cerr
 void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept;
 
+// Helper template to denote intentionally unused parameters.
+// Quiets compiler warnings about them.
+template<typename T>
+void unused(T) {}
+
 } // namespace sqxx
 
 #endif // SQXX_SQXX_HPP_INCLUDED
