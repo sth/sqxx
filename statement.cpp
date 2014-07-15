@@ -97,6 +97,13 @@ void statement::bind<const char*>(int idx, const char *value, bool copy) {
 }
 
 template<>
+void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
+	int rv = sqlite3_bind_text(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+
+template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy) {
 	if (value.data) {
 		int rv = sqlite3_bind_blob(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
@@ -138,6 +145,11 @@ template<>
 const char* statement::val<const char*>(int idx) const {
 	// cast necessary because api function returns `const unsigned char*`
 	return reinterpret_cast<const char*>(sqlite3_column_text(handle, idx));
+}
+
+template<>
+std::string statement::val<std::string>(int idx) const {
+	return val<const char*>(idx);
 }
 
 template<>

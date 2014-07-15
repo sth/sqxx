@@ -306,9 +306,7 @@ template<>
 void statement::bind<const char*>(int idx, const char* value, bool copy);
 
 template<>
-inline void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
-	bind<const char*>(idx, value.c_str(), copy);
-}
+void statement::bind<std::string>(int idx, const std::string &value, bool copy);
 
 /** Set a parameter to a blob.
  *
@@ -340,9 +338,7 @@ const char* statement::val<const char*>(int idx) const;
 
 /** Wraps [`sqlite3_column_text()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
-inline std::string statement::val<std::string>(int idx) const {
-	return val<const char*>(idx);
-}
+std::string statement::val<std::string>(int idx) const;
 
 /** Wraps [`sqlite3_column_blob()`](http://www.sqlite.org/c3ref/column_blob.html) */
 template<>
