@@ -74,8 +74,16 @@ public:
 	 * and [`sqlite3_result_zeroblob()`](http://www.sqlite.org/c3ref/result_blob.html),
 	 */
 	template<typename R>
-	if_sqxx_db_type<R, void>
+	if_selected_type<R, void, int, int64_t, double>
 	result(R value);
+
+	template<typename R>
+	if_selected_type<R, void, const char*>
+	result(R value, bool copy=true);
+
+	template<typename R>
+	if_selected_type<R, void, std::string, blob>
+	result(const R &value, bool copy=true);
 
 	/*
 	template<typename R>
@@ -94,9 +102,18 @@ public:
 	sqlite3_context* raw();
 };
 
-/** sqlite3_result_int() */
 template<>
 void context::result<int>(int value);
+template<>
+void context::result<int64_t>(int64_t value);
+template<>
+void context::result<double>(double value);
+template<>
+void context::result(const char *value, bool copy);
+template<>
+void context::result(const std::string &value, bool copy);
+template<>
+void context::result(const blob &value, bool copy);
 
 // TODO: More specializations
 

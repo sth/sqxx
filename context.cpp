@@ -27,6 +27,41 @@ void context::result<int>(int value) {
 	sqlite3_result_int(handle, value);
 }
 
+template<>
+void context::result<int64_t>(int64_t value) {
+	sqlite3_result_int64(handle, value);
+}
+
+template<>
+void context::result<double>(double value) {
+	sqlite3_result_double(handle, value);
+}
+
+template<>
+void context::result(const char *value, bool copy) {
+	if (value) {
+		sqlite3_result_text(handle, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	}
+	else {
+		sqlite3_result_null(handle);
+	}
+}
+
+template<>
+void context::result(const std::string &value, bool copy) {
+	sqlite3_result_text(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+}
+
+template<>
+void context::result(const blob &value, bool copy) {
+	if (value.data) {
+		sqlite3_result_blob(handle, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	}
+	else {
+		sqlite3_result_zeroblob(handle, value.length);
+	}
+}
+
 void* context::aggregate_context(int bytes) {
 	return sqlite3_aggregate_context(handle, bytes);
 }
