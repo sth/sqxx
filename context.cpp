@@ -22,6 +22,14 @@ void context::result_error_nomem() {
 	sqlite3_result_error_nomem(handle);
 }
 
+void context::result_null() {
+	result();
+}
+
+void context::result() {
+	sqlite3_result_null(handle);
+}
+
 template<>
 void context::result<int>(int value) {
 	sqlite3_result_int(handle, value);

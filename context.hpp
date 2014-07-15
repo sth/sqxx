@@ -31,6 +31,8 @@ public:
 	 * Wraps [`sqlite3_result_null()`](http://www.sqlite.org/c3ref/result_blob.html)
 	 */
 	void result_null();
+	void result();
+
 	/**
 	 * Sets result to error with the given message
 	 *
