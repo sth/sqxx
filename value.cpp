@@ -36,6 +36,7 @@ const char* value::val<const char*>() const {
 
 template<>
 std::string value::val<std::string>() const {
+	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const unsigned char *text = sqlite3_value_text(handle);
 	int bytes = sqlite3_value_bytes(handle);
 	return std::string(reinterpret_cast<const char*>(text), bytes);
@@ -53,6 +54,7 @@ value::operator int() const { return val<int>(); }
 value::operator int64_t() const { return val<int64_t>(); }
 value::operator double() const { return val<double>(); }
 value::operator const char*() const { return val<const char*>(); }
+value::operator std::string() const { return val<std::string>(); }
 value::operator blob() const { return val<blob>(); }
 
 } // namespace sqxx

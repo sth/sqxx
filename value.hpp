@@ -32,7 +32,7 @@ public:
 	val() const;
 
 	/**
-	 * Implicit vonversions for the contained value.
+	 * Implicit conversions for the contained value.
 	 *
 	 * Like `val<>()`.
 	 */
@@ -40,6 +40,7 @@ public:
 	operator int64_t() const;
 	operator double() const;
 	operator const char*() const;
+	operator std::string() const;
 	operator blob() const;
 
 	/**
