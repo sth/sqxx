@@ -50,19 +50,27 @@ public:
 	bind(const T &value, bool copy=true);
 };
 
-inline void parameter::bind() { stmt.bind(idx); }
+inline void parameter::bind() {
+	stmt.bind(idx);
+}
 
 template<typename T>
 if_selected_type<T, void, int, int64_t, double>
-parameter::bind(T value) { stmt.bind<T>(idx, value); }
+parameter::bind(T value) {
+	stmt.bind<T>(idx, value);
+}
 
 template<typename T>
 if_selected_type<T, void, const char*>
-parameter::bind(T value, bool copy) { stmt.bind<T>(idx, value, copy); }
+parameter::bind(T value, bool copy) {
+	stmt.bind<T>(idx, value, copy);
+}
 
 template<typename T>
 if_selected_type<T, void, std::string, blob>
-parameter::bind(const T &value, bool copy) { stmt.bind<T>(idx, value, copy); }
+parameter::bind(const T &value, bool copy) {
+	stmt.bind<T>(idx, value, copy);
+}
 
 } // namespace sqxx
 

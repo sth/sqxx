@@ -35,6 +35,13 @@ const char* value::val<const char*>() const {
 }
 
 template<>
+std::string value::val<std::string>() const {
+	const unsigned char *text = sqlite3_value_text(handle);
+	int bytes = sqlite3_value_bytes(handle);
+	return std::string(reinterpret_cast<const char*>(text), bytes);
+}
+
+template<>
 blob value::val<blob>() const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const void *data = sqlite3_value_blob(handle);

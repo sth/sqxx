@@ -143,13 +143,15 @@ double statement::val<double>(int idx) const {
 
 template<>
 const char* statement::val<const char*>(int idx) const {
-	// cast necessary because api function returns `const unsigned char*`
-	return reinterpret_cast<const char*>(sqlite3_column_text(handle, idx));
+	const unsigned char *text = sqlite3_column_text(handle, idx);
+	return reinterpret_cast<const char*>(text);
 }
 
 template<>
 std::string statement::val<std::string>(int idx) const {
-	return val<const char*>(idx);
+	const unsigned char* text = sqlite3_column_text(handle, idx);
+	int bytes = sqlite3_column_bytes(handle, idx);
+	return std::string(reinterpret_cast<const char*>(text), bytes);
 }
 
 template<>

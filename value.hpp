@@ -63,6 +63,8 @@ double value::val<double>() const;
 /** sqlite3_value_text() */
 template<>
 const char* value::val<const char*>() const;
+template<>
+std::string value::val<std::string>() const;
 
 /** sqlite3_value_blob() */
 template<>
