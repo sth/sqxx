@@ -669,13 +669,12 @@ void sqxx_call_collation_handler(void *data, sqlite3* conn, int textrep, const c
 	// We registered on a certain connection, and thats the connection we
 	// expect to get back here. So `conn` seems to be pretty useless here.
 	// 
-	// We could store a reference to the connection in collation_data_t and then
-	// check here if you got the right connection back
-	//assert(handle == dat->c.handle);
+	// We store a reference to the connection in collation_data_t and then
+	// could check here if you got the right connection back
 	collation_data_t *dat = reinterpret_cast<collation_data_t*>(data);
 	try {
 		//if (textrep != SQLITE_UTF8) {
-		//	throw error("invalid collation encoding");
+		//	throw error("non-utf8 collation requested");
 		//}
 		//if (conn != data->c.handle) {
 		//	throw error("invalid connection");

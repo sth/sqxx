@@ -79,6 +79,7 @@ public:
 	if_selected_type<R, void, int, int64_t, double>
 	result(R value);
 
+	/* If a nullptr is passed, the result is set to NULL. */
 	template<typename R>
 	if_selected_type<R, void, const char*>
 	result(R value, bool copy=true);
@@ -86,11 +87,6 @@ public:
 	template<typename R>
 	if_selected_type<R, void, std::string, blob>
 	result(const R &value, bool copy=true);
-
-	/*
-	template<typename R>
-	void result(std::optional<R> value);
-	*/
 
 private:
 	// This is used internally by our aggregate functions
@@ -116,20 +112,6 @@ template<>
 void context::result(const std::string &value, bool copy);
 template<>
 void context::result(const blob &value, bool copy);
-
-// TODO: More specializations
-
-/*
-template<>
-class result<std::string> : public result<const char*> {
-	typedef result<const char*> base_type;
-
-	result(const std::string &value, bool copy=true) : base_type(value.c_string, copy) {
-	}
-
-	void apply(sqlite3_context *ctx);
-};
-*/
 
 } // namespace sqxx
 
