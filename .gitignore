@@ -1,0 +1,5 @@
+*.o
+*.a
+.scons*
+sqxx_test
+*.swp
