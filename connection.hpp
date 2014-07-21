@@ -212,7 +212,8 @@ public:
 
 	// sqlite3_exec().
 	// Only for api compatibility, better use run() and iterator interface
-	//void exec(const char *sql, const std::function<bool()> &callback);
+	typedef std::function<bool (int, char**, char**)> exec_handler_t;
+	void exec(const char *sql, const exec_handler_t &fun);
 
 	/*
 	template<typename T>

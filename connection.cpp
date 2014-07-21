@@ -207,16 +207,6 @@ void connection::create_collation(const char *name, const collation_function_t &
 }
 
 /*
-void connection::exec(const char *sql, const std::function<void (statement&)> &fun) {
-	statement st;
-	st.run(sql);
-	for (auto i : st) {
-		fun(st);
-	}
-}
-*/
-
-/*
 void connection::create_str_collation(const char *name, const collation_str_function_t &coll) {
 	// TODO: in the lambda, coll is a copy of the function or only a copy of the reference?
 	create_collation(name, collation_function_t([coll](int llen, const char *lstr, int rlen, const char *rstr) -> int {
@@ -226,17 +216,17 @@ void connection::create_str_collation(const char *name, const collation_str_func
 */
 
 
-/*
 struct exec_context {
-	connection *con;
-	const std::function<bool ()> &callback;
+	const connection::exec_handler_t &fun;
 	std::exception_ptr ex;
+	exec_context(const connection::exec_handler_t &fun_arg) : fun(fun_arg), ex() {
+	}
 };
 
-int exec_callback(void *data, int, char**, char**) {
+int sqxx_call_exec_handler(void *data, int colcount, char **values, char **columns) {
 	exec_context *ctx = reinterpret_cast<exec_context*>(data);
 	try {
-		return ctx->fn();
+		return ctx->fun(colcount, values, columns);
 	}
 	catch (...) {
 		ctx->ex = std::current_exception();
@@ -244,15 +234,12 @@ int exec_callback(void *data, int, char**, char**) {
 	}
 }
 
-void connection::exec(const char *sql, const std::function<bool ()> &callback) {
+void connection::exec(const char *sql, const exec_handler_t &fun) {
 	char *errmsg = nullptr;
 	int rv;
-	if (callback) {
-		exec_context ctx = {
-			this,
-			callback
-		};
-		rv = sqlite3_exec(handle, sql, exec_callback, &ctx, &errmsg);
+	if (fun) {
+		exec_context ctx(fun);
+		rv = sqlite3_exec(handle, sql, sqxx_call_exec_handler, &ctx, &errmsg);
 		if (ctx.ex) {
 			std::rethrow_exception(ctx.ex);
 		}
@@ -264,10 +251,9 @@ void connection::exec(const char *sql, const std::function<bool ()> &callback) {
 	if (rv != SQLITE_OK) {
 		//TODO: Use errmsg
 		sqlite3_free(errmsg);
-		throw error(rv);
+		throw static_error(rv);
 	}
 }
-*/
 
 statement connection::run(const char *sql) {
 	statement st = prepare(sql);
