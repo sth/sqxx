@@ -5,6 +5,7 @@
 #define SQXX_CONNECTION_HPP_INCLUDED
 
 #include "datatypes.hpp"
+#include "error.hpp"
 #include <memory>
 #include <functional>
 
@@ -33,6 +34,11 @@ enum open_flags {
 	 OPEN_SHAREDCACHE =      0x00020000,  /* Ok for sqlite3_open_v2() */
 	 OPEN_PRIVATECACHE =     0x00040000,  /* Ok for sqlite3_open_v2() */
 	 //OPEN_WAL =              0x00080000,  /* VFS only */
+};
+
+class recent_error : public error {
+public:
+	recent_error(sqlite3 *handle);
 };
 
 class statement;

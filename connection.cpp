@@ -5,48 +5,11 @@
 #include "sqxx.hpp"
 #include "error.hpp"
 #include <sqlite3.h>
-#include <iostream>
 #include <cstring>
 
 namespace sqxx {
 
-// ---------------------------------------------------------------------------
-// helper functions
-
-void default_callback_exception_handler(const char *cbname, std::exception_ptr ex) noexcept {
-	std::cerr << "SQXX: uncaught exeption in " << cbname << ": ";
-	if (!ex) {
-		std::cerr << "(exception not captured)";
-	}
-	else {
-		try {
-			std::rethrow_exception(ex);
-		}
-		catch (const std::exception &rex) {
-			const char *what = rex.what();
-			if (what)
-				std::cerr << what;
-			else
-				std::cerr << "(no message)";
-		}
-		catch (...) {
-			std::cerr << "(unknown exception type)";
-		}
-	}
-	std::cerr << std::endl;
-}
-
-static callback_exception_handler_t callback_exception_handler = default_callback_exception_handler;
-
-void handle_callback_exception(const char *cbname) {
-	if (callback_exception_handler) {
-		try {
-			callback_exception_handler(cbname, std::current_exception());
-		}
-		catch (...) {
-			default_callback_exception_handler("callback exception handler", std::current_exception());
-		}
-	}
+recent_error::recent_error(sqlite3 *handle) : error(sqlite3_errcode(handle), sqlite3_errmsg(handle)) {
 }
 
 struct collation_data_t {

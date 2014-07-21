@@ -10,6 +10,7 @@ src = Split('''
 	column.cpp
 	config.cpp
 	context.cpp
+	error.cpp
 	statement.cpp
 	connection.cpp
 	sqxx.cpp
