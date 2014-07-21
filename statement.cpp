@@ -149,6 +149,7 @@ const char* statement::val<const char*>(int idx) const {
 
 template<>
 std::string statement::val<std::string>(int idx) const {
+	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const unsigned char* text = sqlite3_column_text(handle, idx);
 	int bytes = sqlite3_column_bytes(handle, idx);
 	return std::string(reinterpret_cast<const char*>(text), bytes);

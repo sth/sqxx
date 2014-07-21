@@ -33,7 +33,8 @@ struct apply_value_array_st {
 template<int I, typename R, typename Fun>
 struct apply_value_array_st<I, I, R, Fun> {
 	template<typename... Values>
-	static R apply(Fun f, sqlite3_value** /*argv*/, Values... args) {
+	static R apply(Fun f, sqlite3_value** argv, Values... args) {
+		unused(argv);
 		return f(std::forward<Values>(args)...);
 	}
 };
@@ -182,7 +183,7 @@ public:
 		//std::vector<value> vs(values, values+nargs);
 	}
 	void final_call(context &ctx) override {
-		// Take ownership of state, deleting it on return
+		// Take ownership of state (if any), deleting it on return
 		ownedobj_ptr<invocation_data> as(get_state_existing(ctx));
 		if (as) {
 			// We have state

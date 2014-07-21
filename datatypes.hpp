@@ -45,6 +45,12 @@ template<typename T, typename R>
 using if_sqxx_db_type = if_selected_type<T, R,
 		int, int64_t, double, const char*, std::string, blob>;
 
+// Helper template to denote intentionally unused parameters.
+// Quiets compiler warnings about them.
+template<typename T>
+void unused(T) {
+}
+
 } // namespace sqxx
 
 #endif // SQXX_DATATYPES_HPP_INCLUDED
