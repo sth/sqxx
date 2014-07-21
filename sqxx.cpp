@@ -30,16 +30,6 @@ managed_error::~managed_error() noexcept {
 recent_error::recent_error(sqlite3 *handle) : error(sqlite3_errcode(handle), sqlite3_errmsg(handle)) {
 }
 
-std::pair<int, int> status(int op, bool reset) {
-	int rv;
-	int cur, hi;
-	rv = sqlite3_status(op, &cur, &hi, static_cast<int>(reset));
-	if (rv != SQLITE_OK)
-		throw static_error(rv);
-	return std::make_pair(cur, hi);
-}
-
-
 
 struct lib_setup {
 	lib_setup() {

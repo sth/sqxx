@@ -35,7 +35,25 @@ int c_libversion_number();
  *
  * Wraps [`sqlite3_status()`](http://www.sqlite.org/c3ref/status.html)
  */
-int status(int op, int *current, int *highwater, bool reset);
+struct counter {
+	int current;
+	int highwater;
+};
+counter status(int op, bool reset=false);
+
+counter status_memory_used(bool reset=false);
+counter status_malloc_size(bool reset=false);
+counter status_malloc_count(bool reset=false);
+counter status_pagecache_used(bool reset=false);
+counter status_pagecache_overflow(bool reset=false);
+counter status_pagecache_size(bool reset=false);
+counter status_scratch_used(bool reset=false);
+counter status_scratch_overflow(bool reset=false);
+counter status_scratch_size(bool reset=false);
+counter status_parser_stack(bool reset=false);
+
+std::pair<int, int> status(int op, bool reset=false);
+
 
 /**
  * Test if the C library was compiler threadsafe.

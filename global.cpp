@@ -23,10 +23,52 @@ int c_libversion_number() {
    return sqlite3_libversion_number();
 }
 
-int status(int op, int *current, int *highwater, bool reset) {
-	rv = sqlite3_status(op, current, highwater, static_cast<int>(reset));
+counter status(int op, bool reset) {
+	counter result;
+	rv = sqlite3_status(op, &result.current, &result.highwater, static_cast<int>(reset));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
+	return result;
+}
+
+counter status_memory_used(bool reset) {
+	return status(SQLITE_STATUS_MEMORY_UNSED, reset);
+}
+
+counter status_malloc_size(bool reset) {
+	return status(SQLITE_STATUS_MEMORY_SIZE, reset);
+}
+
+counter status_malloc_count(bool reset) {
+	return status(SQLITE_STATUS_MEMORY_COUNT, reset);
+}
+
+counter status_pagecache_used(bool reset) {
+	return status(SQLITE_STATUS_PAGECAHE_USED, reset);
+}
+
+counter status_pagecache_overflow(bool reset) {
+	return status(SQLITE_STATUS_PAGECAHE_OVEFLOW, reset);
+}
+
+counter status_pagecache_size(bool reset) {
+	return status(SQLITE_STATUS_PAGECAHE_SIZE, reset);
+}
+
+counter status_scratch_used(bool reset) {
+	return status(SQLITE_STATUS_SCRATCH_USED, reset);
+}
+
+counter status_scratch_overflow(bool reset) {
+	return status(SQLITE_STATUS_SCRATCH_OVERFLOW, reset);
+}
+
+counter status_scratch_size(bool reset) {
+	return status(SQLITE_STATUS_SCRATCH_SIZE, reset);
+}
+
+counter status_parser_stack(bool reset) {
+	return status(SQLITE_STATUS_PARSER_STACK, reset);
 }
 
 bool threadsafe() {
