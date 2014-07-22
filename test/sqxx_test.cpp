@@ -2,6 +2,7 @@
 // (c) 2013 Stephan Hohe
 
 #include "sqxx.hpp"
+#include "column.hpp"
 #include "function.hpp"
 
 #include <boost/test/unit_test.hpp>
