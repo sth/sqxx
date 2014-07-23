@@ -1,0 +1,22 @@
+
+Import(['env_use', 'lib'])
+
+env_test = env_use.Clone()
+env_test.Append(
+		CXXFLAGS = ['-Wno-unused-parameter'],
+		CPPDEFINES = ['BOOST_TEST_DYN_LINK'],
+		LIBS = ['boost_unit_test_framework']
+	)
+
+test_src = Split('''
+	driver.cpp
+   sqxx_test.cpp
+   ''')
+sqxx_test = env_test.Program('#/sqxx_test', test_src + [lib])
+sqxx_test_run = Alias('sqxx_test_run', [sqxx_test], env_test.Action('./sqxx_test'))
+AlwaysBuild(sqxx_test_run)
+
+test_unit = Alias('test_unit', 'sqxx_test_run')
+
+#test_run = env_test.Execute(env_test.Command('sqxx_test_run', 'sqxx_test', '#/sqxx_test')
+
