@@ -6,4 +6,5 @@ syntax: glob
 sqxx_test
 *.swp
 callable
+examples/usage
 

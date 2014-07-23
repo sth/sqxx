@@ -1,0 +1,7 @@
+
+Import(['env_use', 'lib'])
+
+examples = env_use.Program('usage', ['usage.cpp', lib])
+
+Alias('examples', examples)
+
