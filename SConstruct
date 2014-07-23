@@ -36,7 +36,7 @@ env_use.Append(
 	)
 Export('env_use')
 
-SConscript(dirs = ['test', 'examples'])
+SConscript(dirs = ['test', 'test-includes', 'examples'])
 
 Alias('test', ['test_unit'])
 Alias('alltests', ['test_unit', 'test_inc'])

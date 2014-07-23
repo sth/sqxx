@@ -1,0 +1,22 @@
+
+Import(['env_use'])
+
+inc_src = Split('''
+	inc_backup.cpp
+	inc_blob.cpp
+	inc_column.cpp
+	inc_config.cpp
+	inc_connection.cpp
+	inc_context.cpp
+	inc_error.cpp
+	inc_function.cpp
+	inc_statement.cpp
+	inc_parameter.cpp
+	inc_sqxx.cpp
+	inc_value.cpp
+   ''')
+
+test_inc_compiled = env_use.Library('compiled', inc_src)
+
+Alias('test_inc', test_inc_compiled)
+
