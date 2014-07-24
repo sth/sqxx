@@ -1,4 +1,9 @@
 
+// (c) 2014 Stephan Hohe
+
+#if !defined(SQXX_GLOBAL_HPP_INCLUDED)
+#define SQXX_GLOBAL_HPP_INCLUDED
+
 namespace sqxx {
 
 /**
@@ -117,4 +122,6 @@ uint64_t memory_highwater(bool reset=false);
 void randomness(int size, void *buf);
 
 } // namespace sqxx
+
+#endif // SQXX_GLOBAL_HPP_INCLUDED
 

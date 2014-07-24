@@ -5,12 +5,10 @@
 #define SQXX_PARAMETER_HPP_INLCUDED
 
 #include "datatypes.hpp"
-#include "sqxx.hpp"
+#include "statement.hpp"
 #include <string>
 
 namespace sqxx {
-
-class statement;
 
 /**
  * Represents a parameter of a prepared statement

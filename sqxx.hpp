@@ -13,8 +13,6 @@
 #include "error.hpp"
 #include "connection.hpp"
 #include "statement.hpp"
-#include "parameter.hpp"
-#include "column.hpp"
 
 #endif // SQXX_SQXX_HPP_INCLUDED
 

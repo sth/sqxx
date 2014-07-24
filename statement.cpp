@@ -2,7 +2,8 @@
 // (c) 2013 Stephan Hohe
 
 #include "statement.hpp"
-#include "sqxx.hpp"
+#include "column.hpp"
+#include "parameter.hpp"
 #include "error.hpp"
 #include <sqlite3.h>
 

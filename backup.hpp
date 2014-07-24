@@ -4,7 +4,7 @@
 #if !defined(SQXX_BACKUP_HPP_INCLUDED)
 #define SQXX_BACKUP_HPP_INCLUDED
 
-#include "sqxx.hpp"
+#include "connection.hpp"
 
 struct sqlite3_backup;
 

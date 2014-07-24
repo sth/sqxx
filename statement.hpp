@@ -5,6 +5,7 @@
 #define SQXX_STATEMENT_HPP_INCLUDED
 
 #include "datatypes.hpp"
+#include "connection.hpp"
 
 // struct from <sqlite3.h>
 struct sqlite3_stmt;
