@@ -38,7 +38,7 @@ protected:
 	bool completed;
 
 public:
-	statement(connection &c, sqlite3_stmt *a_handle);
+	statement(connection &conn_arg, sqlite3_stmt *handle_arg);
 	~statement();
 
 	// Don't copy, move
@@ -64,7 +64,7 @@ public:
 	 * [`sqlite3_bind_parameter_index()`]()
 	 */
 	int param_index(const char *name) const;
-	int param_index(const std::string &name) const { return param_index(name.c_str()); }
+	int param_index(const std::string &name) const;
 
 	/** Get a parameter object, by index or name */
 	parameter param(int idx);
@@ -258,6 +258,11 @@ public:
     * Wraps [`sqlite3_stmt_status()`](http://www.sqlite.org/c3ref/stmt_status.html)
     */
 	int status(int op, bool reset=false);
+
+	int status_fullscan_step(bool reset=false);
+	int status_sort(bool reset=false);
+	int status_autoindex(bool reset=false);
+
 	/**
     * Wraps [`sqlite3_stmt_readonly()`](http://www.sqlite.org/c3ref/stmt_readonly.html)
     */

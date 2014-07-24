@@ -27,6 +27,7 @@ public:
 	/** Wraps [`sqlite3_column_origin_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* origin_name() const;
 
+	// TODO: Better return type
 	/** Wraps [`sqlite3_column_type()`](http://www.sqlite.org/c3ref/column_blob.html) */
 	int type() const;
 	/** Wraps [`sqlite3_column_decltype()`](http://www.sqlite.org/c3ref/column_decltype.html) */

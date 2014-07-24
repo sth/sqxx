@@ -59,8 +59,12 @@ connection::~connection() noexcept {
 	}
 }
 
-const char *connection::filename(const char *db) const {
+const char* connection::filename(const char *db) const {
 	return sqlite3_db_filename(handle, db);
+}
+
+const char* connection::filename(const std::string &db) const {
+	return filename(db.c_str());
 }
 
 void connection::config_lookaside(void *buf, int slotsize, int slotcount) {
@@ -100,13 +104,53 @@ uint64_t connection::last_insert_rowid() const {
 	return sqlite3_last_insert_rowid(handle);
 }
 
-std::pair<int, int> connection::status(int op, bool reset) {
+counter connection::status(int op, bool reset) {
 	int rv;
-	int cur, hi;
-	rv = sqlite3_db_status(handle, op, &cur, &hi, static_cast<int>(reset));
+	counter result;
+	rv = sqlite3_db_status(handle, op, &result.current, &result.highwater, static_cast<int>(reset));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
-	return std::make_pair(cur, hi);
+	return result;
+}
+
+counter connection::status_lookaside_used(bool reset) {
+	return status(SQLITE_DBSTATUS_LOOKASIDE_USED, reset);
+}
+
+counter connection::status_cache_used(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_USED, reset);
+}
+
+counter connection::status_schema_used(bool reset) {
+	return status(SQLITE_DBSTATUS_SCHEMA_USED, reset);
+}
+
+counter connection::status_stmt_used(bool reset) {
+	return status(SQLITE_DBSTATUS_STMT_USED, reset);
+}
+
+counter connection::status_lookaside_hit(bool reset) {
+	return status(SQLITE_DBSTATUS_LOOKASIDE_HIT, reset);
+}
+
+counter connection::status_lookaside_miss_size(bool reset) {
+	return status(SQLITE_DBSTATUS_LOOKASIDE_MISS_SIZE, reset);
+}
+
+counter connection::status_lookaside_miss_full(bool reset) {
+	return status(SQLITE_DBSTATUS_LOOKASIDE_MISS_FULL, reset);
+}
+
+counter connection::status_cache_hit(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_HIT, reset);
+}
+
+counter connection::status_cache_miss(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_MISS, reset);
+}
+
+counter connection::status_cache_write(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_WRITE, reset);
 }
 
 column_metadata connection::metadata(const char *db, const char *table, const char *column) const {
@@ -136,6 +180,10 @@ void connection::open(const char *filename, int flags) {
 			close();
 		throw static_error(rv);
 	}
+}
+
+void connection::open(const std::string &filename, int flags) {
+	open(filename.c_str(), flags);
 }
 
 void connection::close_sync() {
@@ -605,12 +653,24 @@ std::pair<int, int> connection::wal_checkpoint_passive(const char *dbname) {
 	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_PASSIVE);
 }
 
+std::pair<int, int> connection::wal_checkpoint_passive(const std::string &dbname) {
+	return wal_checkpoint_passive(dbname.c_str());
+}
+
 std::pair<int, int> connection::wal_checkpoint_full(const char *dbname) {
 	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_FULL);
 }
 
+std::pair<int, int> connection::wal_checkpoint_full(const std::string &dbname) {
+	return wal_checkpoint_full(dbname.c_str());
+}
+
 std::pair<int, int> connection::wal_checkpoint_restart(const char *dbname) {
 	return wal_checkpoint(dbname, SQLITE_CHECKPOINT_RESTART);
+}
+
+std::pair<int, int> connection::wal_checkpoint_restart(const std::string &dbname) {
+	return wal_checkpoint_restart(dbname.c_str());
 }
 
 extern "C"

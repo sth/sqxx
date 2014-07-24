@@ -88,7 +88,7 @@ public:
 	 * Wraps [`sqlite3_db_filename()`](http://www.sqlite.org/c3ref/db_filename.html)
 	 */
 	const char* filename(const char *db = "main") const;
-	const char* filename(const std::string &db) const { return filename(db.c_str()); }
+	const char* filename(const std::string &db) const;
 
 	/**
 	 * Database configuration SQLITE_DBCONFIG_LOOKASIDE.
@@ -139,7 +139,17 @@ public:
 	 *
 	 * Wraps [`sqlite3_db_status()`](http://www.sqlite.org/c3ref/db_status.html)
 	 */
-	std::pair<int, int> status(int op, bool reset=false);
+	counter status(int op, bool reset=false);
+	counter status_lookaside_used(bool reset=false);
+	counter status_cache_used(bool reset=false);
+	counter status_schema_used(bool reset=false);
+	counter status_stmt_used(bool reset=false);
+	counter status_lookaside_hit(bool reset=false);
+	counter status_lookaside_miss_size(bool reset=false);
+	counter status_lookaside_miss_full(bool reset=false);
+	counter status_cache_hit(bool reset=false);
+	counter status_cache_miss(bool reset=false);
+	counter status_cache_write(bool reset=false);
 
 	/**
 	 * Wraps [`sqlite3_table_column_metadata()`](http://www.sqlite.org/c3ref/table_column_metadata.html)
@@ -158,7 +168,7 @@ public:
 	 * Wraps [`sqlite3_open_v2()`](http://www.sqlite.org/c3ref/open.html)
 	 */
 	void open(const char *filename, int flags = 0);
-	void open(const std::string &filename, int flags = 0) { open(filename.c_str(), flags); }
+	void open(const std::string &filename, int flags = 0);
 
 	/**
 	 * Close the database connection (might delay closure and finish it async).
@@ -349,22 +359,23 @@ public:
 	 * Wraps [`sqlite3_wal_checkpoint_v2()`](http://www.sqlite.org/c3ref/wal_checkpoint_v2.html)
 	 */
 	std::pair<int, int> wal_checkpoint(const char *dbname, int emode);
+
 	std::pair<int, int> wal_checkpoint_passive(const char *dbname);
-	std::pair<int, int> wal_checkpoint_passive(const std::string &dbname) { return wal_checkpoint_passive(dbname.c_str()); }
+	std::pair<int, int> wal_checkpoint_passive(const std::string &dbname);
 	std::pair<int, int> wal_checkpoint_full(const char *dbname);
-	std::pair<int, int> wal_checkpoint_full(const std::string &dbname) { return wal_checkpoint_full(dbname.c_str()); }
+	std::pair<int, int> wal_checkpoint_full(const std::string &dbname);
 	std::pair<int, int> wal_checkpoint_restart(const char *dbname);
-	std::pair<int, int> wal_checkpoint_restart(const std::string &dbname) { return wal_checkpoint_restart(dbname.c_str()); }
+	std::pair<int, int> wal_checkpoint_restart(const std::string &dbname);
 
 	/* sqlite3_collation_needed() */
 	typedef std::function<void (connection&, const char*)> collation_handler_t;
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
 
+	// TODO:
 	//typedef std::function<void ()> unlock_handler_t;
 	//void set_unlock_handler(const unlock_handler_t &fun);
 	//void set_unlock_handler();
-
 
 private:
 	void create_function_p(const char *name, int nargs, detail::function_data *fundata);

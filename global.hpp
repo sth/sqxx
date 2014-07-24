@@ -40,10 +40,6 @@ int c_libversion_number();
  *
  * Wraps [`sqlite3_status()`](http://www.sqlite.org/c3ref/status.html)
  */
-struct counter {
-	int current;
-	int highwater;
-};
 counter status(int op, bool reset=false);
 
 counter status_memory_used(bool reset=false);

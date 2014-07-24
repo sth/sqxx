@@ -27,6 +27,18 @@ int statement::status(int op, bool reset) {
 	return sqlite3_stmt_status(handle, op, static_cast<int>(reset));
 }
 
+int statement::status_fullscan_step(bool reset) {
+	return status(SQLITE_STMTSTATUS_FULLSCAN_STEP, reset);
+}
+
+int statement::status_sort(bool reset) {
+	return status(SQLITE_STMTSTATUS_SORT, reset);
+}
+
+int statement::status_autoindex(bool reset) {
+	return status(SQLITE_STMTSTATUS_AUTOINDEX, reset);
+}
+
 bool statement::readonly() const {
 	return sqlite3_stmt_readonly(handle);
 }
@@ -40,6 +52,10 @@ int statement::param_index(const char *name) const {
 	if (idx == 0)
 		throw error(SQLITE_RANGE, std::string("cannot find parameter \"") + name + "\"");
 	return idx-1;
+}
+
+int statement::param_index(const std::string &name) const {
+	return param_index(name.c_str());
 }
 
 int statement::param_count() const {
