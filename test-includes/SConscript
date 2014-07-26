@@ -10,6 +10,7 @@ inc_src = Split('''
 	inc_context.cpp
 	inc_error.cpp
 	inc_function.cpp
+	inc_global.cpp
 	inc_statement.cpp
 	inc_parameter.cpp
 	inc_sqxx.cpp
