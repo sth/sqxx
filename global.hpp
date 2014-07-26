@@ -4,6 +4,8 @@
 #if !defined(SQXX_GLOBAL_HPP_INCLUDED)
 #define SQXX_GLOBAL_HPP_INCLUDED
 
+#include "datatypes.hpp"
+
 namespace sqxx {
 
 /**
@@ -23,17 +25,17 @@ int64_t soft_heap_limit(int64_t limit);
 /**
  * Wraps [`sqlite3_sourceid()`](http://www.sqlite.org/c3ref/libversion.html)
  */
-const char* c_source_id();
+const char* capi_source_id();
 
 /**
  * Wraps [`sqlite3_libversion()`](http://www.sqlite.org/c3ref/libversion.html)
  */
-const char* c_libversion();
+const char* capi_libversion();
 
 /**
  * Wraps [`sqlite3_libversion_number()`](http://www.sqlite.org/c3ref/libversion.html)
  */
-int c_libversion_number();
+int capi_libversion_number();
 
 /**
  * Query Sqlite runtime status
@@ -53,9 +55,6 @@ counter status_scratch_overflow(bool reset=false);
 counter status_scratch_size(bool reset=false);
 counter status_parser_stack(bool reset=false);
 
-std::pair<int, int> status(int op, bool reset=false);
-
-
 /**
  * Test if the C library was compiler threadsafe.
  *
@@ -72,9 +71,7 @@ bool threadsafe();
  * Wraps [`sqlite3_status()`](http://www.sqlite.org/c3ref/status.html)
  */
 int compileoption_used(const char *name);
-int compileoption_used(const std::string &name) {
-	compileoption_used(name.c_str());
-}
+int compileoption_used(const std::string &name);
 
 /**
  * Check which sqlite3 C library compilation options were used.
@@ -92,10 +89,9 @@ const char* compileoption_get(int nr);
  * Wraps [`sqlite3_complete()`](http://www.sqlite.org/c3ref/complete.html)
  */
 bool complete(const char *sql);
-bool complete(const std::string &sql) {
-	return complete(sql.c_str());
-}
+bool complete(const std::string &sql);
 
+// TOOD: group intp one counter
 /**
  * Memory allocator statistics
  *

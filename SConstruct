@@ -11,6 +11,7 @@ src = Split('''
 	config.cpp
 	context.cpp
 	error.cpp
+	global.cpp
 	statement.cpp
 	connection.cpp
 	sqxx.cpp
