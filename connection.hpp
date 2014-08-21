@@ -220,8 +220,11 @@ public:
 	statement run(const char *sql);
 	statement run(const std::string &sql);
 
-	// sqlite3_exec().
-	// Only for api compatibility, better use run() and iterator interface
+	/**
+	 * Only for api compatibility, better use run() and iterator interface
+	 *
+	 * Wraps [`sqlite3_exec()`](http://www.sqlite.org/c3ref/exec.html)
+	 */
 	typedef std::function<bool (int, char**, char**)> exec_handler_t;
 	void exec(const char *sql, const exec_handler_t &fun);
 
@@ -314,7 +317,11 @@ public:
 	void set_profile_handler(const profile_handler_t &fun);
 	void set_profile_handler();
 
-	/* sqlite3_set_authorizer() */
+	/**
+	 * Register a compile-time authorizer callback function
+	 *
+	 * Wraps [`sqlite3_set_authorizer()`](http://www.sqlite.org/c3ref/set_authorizer.html)
+	 */
 	typedef std::function<int (int, const char*, const char*, const char*, const char*)> authorize_handler_t;
 	void set_authorize_handler(const authorize_handler_t &fun);
 	void set_authorize_handler();
@@ -367,7 +374,9 @@ public:
 	std::pair<int, int> wal_checkpoint_restart(const char *dbname);
 	std::pair<int, int> wal_checkpoint_restart(const std::string &dbname);
 
-	/* sqlite3_collation_needed() */
+	/**
+	 * Wraps [`sqlite3_collation_needed()`](http://www.sqlite.org/c3ref/collation_needed.html)
+	 */
 	typedef std::function<void (connection&, const char*)> collation_handler_t;
 	void set_collation_handler(const collation_handler_t &fun);
 	void set_collation_handler();
@@ -412,7 +421,7 @@ public:
 	template<typename State, typename Result, typename... Args>
 	void create_aggregate(const char *name, State zero,
 			const std::function<void (State&, Args...)> &stepfun,
-			const std::function<Result (const State &)> &finalfun);
+			const std::function<Result (const State&)> &finalfun);
 
 	template<typename State, typename StepCallable, typename FinalCallable>
 	void create_aggregate(const char *name, State zero, StepCallable stepfun, FinalCallable finalfun);

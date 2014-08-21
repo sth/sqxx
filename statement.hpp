@@ -38,16 +38,34 @@ protected:
 	bool completed;
 
 public:
+	/**
+	 * Constructs a statement object from a connection object and a C API
+	 * statement handle.
+	 *
+	 * Usually not called directly, use `connection::prepare()` instead.
+	 *
+	 * @conn_arg The connection object associated with the statement. A reference
+	 * is stored and the connection object must stay alive until the constructed
+	 * `statement` is destroyed.
+	 *
+	 * @handle_arg A C API statement handle. The constructed `statement` takes
+	 * ownership of the C API handle and will close it on destruction.
+	 */
 	statement(connection &conn_arg, sqlite3_stmt *handle_arg);
+	/*
+	 * Destroys the object, closing the managed C API handle, if necessary.
+	 */
 	~statement();
 
-	// Don't copy, move
+	/** Copy construction is disabled */
 	statement(const statement &) = delete;
+	/** Copy assignment is disabled */
 	statement& operator=(const statement&) = delete;
+	/** Move construction is enabled */
 	statement(statement &&) = default;
+	/** Move assignment is enabled */
 	statement& operator=(statement&&) = default;
 
-	// Parameters of prepared statements
 
 	/**
 	 * Get count of parameters in prepared statement.
@@ -59,22 +77,48 @@ public:
 	/**
 	 * Get index of a named parameter.
 	 *
-	 * Mostly used internally; use `param(name)` or `bind(name, value)` instead.
+	 * Usually only used internally.
 	 *
-	 * [`sqlite3_bind_parameter_index()`]()
+	 * To bind a value to a named it is unnecessary to look up its
+	 * index first, the name can be used directly with `bind(name, value)`.
+	 *
+	 * When the same parameter is bound many times for many queries it
+	 * might be useful as a performance optimization to look the name up
+	 * only once, but in this case usually a `parameter` object obtained
+	 * by `statement::param(name)` will be used.
+	 *
+	 * Wraps [`sqlite3_bind_parameter_index()`](http://www.sqlite.org/c3ref/bind_parameter_index.html).
 	 */
 	int param_index(const char *name) const;
+	/** Like <statement::param_index(const char*)> */
 	int param_index(const std::string &name) const;
 
-	/** Get a parameter object, by index or name */
+	/**
+	 * Get a parameter object, by index or name.
+	 *
+	 * Most commonly no parameter objects are created but parameters are bound directly
+	 * with `statement::bind()`.
+	 *
+	 * An explicit parameter object can be useful if you need to bind the same
+	 * parameter for many, many queries and want to avoid the (small) performance
+	 * cost of repeated name lookups. Then you could replace repeated
+	 * `stmt.bind("paramname", value);` by a single `auto p = stmt.param("paramname")`,
+	 * followed by repeated `p.bind(value)`.
+	 *
+	 * The same performance can also be achieved without `parameter` objects by using
+	 * numeric parameter indexes instead of names.
+	 */
 	parameter param(int idx);
 	parameter param(const char *name);
 	parameter param(const std::string &name);
 
-	/** Bind parameter values in prepared statements
+	/**
+	 * Bind parameter values in prepared statements
 	 *
-	 * For each supported type an appropriate specialization is provided,
-	 * calling the underlying C API function.
+	 * Parameters values of types `int`, `int64_t`, `double`, `const char*`,
+	 * std::string` and `sqxx:blob` are supported. For each supported type an
+	 * appropriate specialization of `bind<>()` is provided, calling the
+	 * underlying C API function.
 	 *
 	 * Using templates allows the user to specify the desired type as
 	 * `bind<type>(idx, value)`. This can be used to easily disambiguate cases
@@ -85,23 +129,34 @@ public:
 	 * Parameter indexes start at zero.
 	 *
 	 *     bind(0, 123);
-	 *     bind("name", 345):
+	 *     bind("paramname", 345):
 	 *
 	 * For string and blob parameters an optional third parameter is
 	 * available, that specifies if sqlite should make an internal copy of
-	 * the passed value. If the parameter is false and no copy is created, the
+	 * the passed value. If the parameter is `false` and no copy is created, the
 	 * caller has to make sure that the passed value stays alive and isn't
 	 * destroyed until the query is completed. Default is to create copies
 	 * of the passed parameters.
 	 *
-	 *    bind(0, std::string("temporary"), true);
-	 *    bind(1, "persistent", false);
+	 *     bind("param1", std::string("temporary"), true);
+	 *     bind("param2", "persistent", false);
 	 *
 	 * If the passed value isn't exactly one supported by sqlite3, overload
-	 * resolution can be ambigious, which leads to compiler errors. In this
+	 * resolution can be ambiguous, which leads to compiler errors. In this
 	 * case manually specify the desired parameter type:
 	 *
-	 *     bind<int64_t>(1, 123U);
+	 *     bind<int64_t>("param3", 123U);
+	 *
+	 * When `bind` is called without a value, the parameter is set to `NULL`:
+	 *
+	 *     bind("param4");
+	 *
+	 * A `NULL` is bound as well when a passed `const char*` is null, or a
+	 * `nullptr` is passed directly:
+	 *
+	 *     const char *str = nullptr;
+	 *     bind("param6", str);
+	 *     bind("param7", nullptr);
 	 *
 	 */
 
@@ -177,25 +232,68 @@ public:
 	// Result columns
 
 	/**
-	 * Number of coulmns in a result set.
+	 * Number of columns in a result set.
 	 *
 	 * Wraps [`sqlite3_column_count()`](http://www.sqlite.org/c3ref/column_count.html) 
 	 */
 	int col_count() const;
 
-	/** Get a column object */
+	/**
+	 * Get a column object.
+	 *
+	 * Usually a column object is not necessary, result data can be accessed
+	 * directly using `statement::val<type>("columnname")`.
+	 *
+	 * A `column` object can be useful to access additional properties of a result
+	 * column, like its declared type and name.
+	 */
+
+	///*
+	// * When the same columns are accessed by name in a large numbers of column rows,
+	// * using a column object might slightly improve performance, since name lookup
+	// * is only done once. Many calls to `stmt.val<type>("colname")` would be
+	// * replaced by a single call `auto c = stmt.col("colname");` and many calls to
+	// * `c.val<type>()`.
+	// *
+	// * The same performance can also be achieved without `column` objects by using
+	// * numeric column indexes instead of names.
+	// */
 	column col(int idx);
 
 	/**
 	 * Access the value of a column in the current result row.
+	 *
+	 * Supported types are `int`, `int64_t`, `double`, `const char*`,
+	 * `std::string` and `sqxx::blob`.
+	 *
+	 * When receiving values as `const char*` or `sqxx::blob`, the returned
+	 * data will refer to storage internal to sqlite and subsequent calls
+	 * to `val()` can invalidate the returned data. For more details see the
+	 * [documentation of the corresponding sqlite C API functions](http://www.sqlite.org/c3ref/column_blob.html)
+	 *
+	 * When receiving a value as `std::string`, the data is copied into the
+	 * returned `std::string` object.
+	 *
+	 * TODO: Add a `copy` flag that can be specified to copy values?
+	 *
+	 * Wraps [`sqlite3_column_*()`](http://www.sqlite.org/c3ref/column_blob.html)
 	 */
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) const;
 
-
 	// Statement execution
 	/**
 	 * Executes a prepared statement or advances to the next row of results.
+	 *
+	 * This is a low-level function, usually it is preferable to execute a
+	 * statement with `run()` and then iterate over the result with `next_row()`
+	 * or use the iterator interface:
+	 *
+	 *     stmt.prepare("SELECT name from persons where id = 123;");
+	 *     stmt.run();
+	 *     for (auto&& : stmt) {
+	 *        std::cout << stmt.val<const char*>(0);
+	 *     }
 	 *
 	 * Wraps [`sqlite3_step()`](http://www.sqlite.org/c3ref/step.html)
 	 */
@@ -244,6 +342,9 @@ public:
 		bool operator!=(const row_iterator &other) const { return !(*this == other); }
 	};
 
+	/**
+	 * Iterate over the result of query
+	 */
 	row_iterator begin() { return row_iterator(this); }
 	row_iterator end() { return row_iterator(); }
 
@@ -264,10 +365,14 @@ public:
 	int status_autoindex(bool reset=false);
 
 	/**
+	 * Determines if the prepared statement writes to the database.
+	 *
     * Wraps [`sqlite3_stmt_readonly()`](http://www.sqlite.org/c3ref/stmt_readonly.html)
     */
    bool readonly() const;
 	/**
+	 * Determine if the prepared statement has been reset
+	 *
     * Wraps [`sqlite3_stmt_busy()`](http://www.sqlite.org/c3ref/stmt_busy.html)
     */
    bool busy() const;

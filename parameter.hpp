@@ -11,7 +11,9 @@
 namespace sqxx {
 
 /**
- * Represents a parameter of a prepared statement
+ * Represents a parameter of a prepared statement.
+ *
+ * Usually it's easier to directly use the corresponding methods on `statement`.
  */
 class parameter {
 public:
