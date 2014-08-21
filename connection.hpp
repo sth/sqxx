@@ -439,24 +439,9 @@ public:
 	sqlite3* raw() { return handle; }
 };
 
-
-template<typename Callable>
-void connection::create_collation(const char *name, Callable coll) {
-	collation_function_t stdfun(coll);
-	create_collation(name, stdfun);
-}
-template<typename Callable>
-void connection::create_collation(const std::string &name, Callable coll) {
-	create_collation(name.c_str(), std::forward<Callable>(coll));
-}
-
-template<typename Callable>
-void connection::create_collation_stdstr(const char *name, Callable coll) {
-	collation_function_stdstr_t stdfun(coll);
-	create_collation_stdstr(name, stdfun);
-}
-
 } // namespace sqxx
+
+#include "connection.impl.hpp"
 
 #endif // SQXX_CONNECTION_HPP_INCLUDED
 

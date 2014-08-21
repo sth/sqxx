@@ -50,6 +50,14 @@ template<typename T, typename R>
 using if_sqxx_db_type = if_selected_type<T, R,
 		int, int64_t, double, const char*, std::string, blob>;
 
+enum class datatype {
+	INTEGER = 1,
+	FLOAT = 2,
+	TEXT = 3,
+	BLOB = 4,
+	NULLVALUE = 5,
+};
+
 // Helper template to denote intentionally unused parameters.
 // Quiets compiler warnings about them.
 template<typename T>

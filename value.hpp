@@ -49,29 +49,9 @@ public:
 	sqlite3_value* raw();
 };
 
-/** sqlite3_value_int() */
-template<>
-int value::val<int>() const;
-
-/** sqlite3_value_int64() */
-template<>
-int64_t value::val<int64_t>() const;
-
-/** sqlite3_value_double() */
-template<>
-double value::val<double>() const;
-
-/** sqlite3_value_text() */
-template<>
-const char* value::val<const char*>() const;
-template<>
-std::string value::val<std::string>() const;
-
-/** sqlite3_value_blob() */
-template<>
-blob value::val<blob>() const;
-
 } // namespace sqxx
+
+#include "value.impl.hpp"
 
 #endif // SQXX_VALUE_HPP_INCLUDED
 

@@ -43,12 +43,9 @@ public:
 	if_sqxx_db_type<T, T> val() const;
 };
 
-template<typename T>
-if_sqxx_db_type<T, T> column::val() const {
-	return stmt.val<T>(idx);
-}
-
 } // namespace sqxx
+
+#include "column.impl.hpp"
 
 #endif // SQXX_COLUMN_HPP_INCLUDED
 
