@@ -349,15 +349,15 @@ public:
 	row_iterator end() { return row_iterator(); }
 
 	/**
-    * Receive statement SQL
-    *
-    * Wraps [`sqlite3_sql()`](http://www.sqlite.org/c3ref/sql.html)
-    **/
+	 * Receive statement SQL
+	 *
+	 * Wraps [`sqlite3_sql()`](http://www.sqlite.org/c3ref/sql.html)
+	 **/
 	const char* sql();
 
 	/**
-    * Wraps [`sqlite3_stmt_status()`](http://www.sqlite.org/c3ref/stmt_status.html)
-    */
+	 * Wraps [`sqlite3_stmt_status()`](http://www.sqlite.org/c3ref/stmt_status.html)
+	 */
 	int status(int op, bool reset=false);
 
 	int status_fullscan_step(bool reset=false);
@@ -367,15 +367,15 @@ public:
 	/**
 	 * Determines if the prepared statement writes to the database.
 	 *
-    * Wraps [`sqlite3_stmt_readonly()`](http://www.sqlite.org/c3ref/stmt_readonly.html)
-    */
-   bool readonly() const;
+	 * Wraps [`sqlite3_stmt_readonly()`](http://www.sqlite.org/c3ref/stmt_readonly.html)
+	 */
+	bool readonly() const;
 	/**
 	 * Determine if the prepared statement has been reset
 	 *
-    * Wraps [`sqlite3_stmt_busy()`](http://www.sqlite.org/c3ref/stmt_busy.html)
-    */
-   bool busy() const;
+	 * Wraps [`sqlite3_stmt_busy()`](http://www.sqlite.org/c3ref/stmt_busy.html)
+	 */
+	bool busy() const;
 
 	/** Raw access to the underlying `sqlite3_stmt*` handle */
 	sqlite3_stmt* raw() const { return handle; }
