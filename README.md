@@ -13,7 +13,7 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
   or custom SQL functions, fully in C++. For example a lambda functions can be registered
   as a custom SQL function and then be called in SQL queries.
 
-### General implemention features
+### General implementation features
 
 - Only minimal overhead over calling the C API functions directly
 - No pollution of the global namespace with sqlite symbols.
@@ -68,7 +68,7 @@ The constructor of `sqxx::connection` takes the database name as a parameter:
 
     sqxx::connection conn("/path/to/dbfile");
 
-Alternatively, you can also use the detault constructor to create the object
+Alternatively, you can also use the default constructor to create the object
 and then later open a database with the `open()` method:
 
     sqxx::connection conn;
@@ -109,9 +109,9 @@ The type parameter must be one of the types supported by this sqxx, which are
 These types map directly to the types supported by the underlying C API.
 
 Since the values in a sqlite3 database are stored without type information,
-every value can be accessed as any type. So `val<double>(0)`, will recieve the
+every value can be accessed as any type. So `val<double>(0)`, will receive the
 value as a double, even if it previously was stored as an int or string. The
-underlying sqlite3 C API will convert the value if neccessary.
+underlying sqlite3 C API will convert the value if necessary.
 
 #### Accessing multiple result rows
 

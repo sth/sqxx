@@ -173,7 +173,7 @@ public:
 	/**
 	 * Close the database connection (might delay closure and finish it async).
 	 *
-	 * [`sqlite3_close_v2()`](http://www.sqlite.org/c3ref/close.html)
+	 * Wraps [`sqlite3_close_v2()`](http://www.sqlite.org/c3ref/close.html)
 	 */
 	void close() noexcept;
 	/**

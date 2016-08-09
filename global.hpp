@@ -56,7 +56,7 @@ counter status_scratch_size(bool reset=false);
 counter status_parser_stack(bool reset=false);
 
 /**
- * Test if the C library was compiler threadsafe.
+ * Test if the C library was compiled thread safe.
  *
  * threadsafe();
  */

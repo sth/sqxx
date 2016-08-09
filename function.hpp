@@ -164,7 +164,7 @@ private:
 
 	// Returns the aggregation state, if there is any
 	invocation_data* get_state_existing(context &ctx) {
-		// Calling with size 0. We'll get any existing daat, or a nullptr if
+		// Calling with size 0. We'll get any existing data, or a nullptr if
 		// there isn't any.
 		invocation_data *as = reinterpret_cast<invocation_data*>(
 				this->get_aggregate_context(ctx, 0)
