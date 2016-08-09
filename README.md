@@ -47,6 +47,14 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
   - `sqlite3_backup*` wrappers
 - No custom destructors for text/blob values given to sqlite
 
+## License
+
+You can use the library in any programs you like, closed or open source,
+commercial or free. The library is licened under the LGPL, so when you make
+changes to *the library itself* and distribute the modified library, you have
+to make the changed source of the library available. For details see the
+LICENSE.md file.
+
 ## Getting started
 
 ### Main classes
