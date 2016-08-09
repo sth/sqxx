@@ -82,7 +82,7 @@ and then later open a database with the `open()` method:
     sqxx::connection conn;
     conn.open("/path/to/dbfile");
 
-To create a temporary in-memory database, use the special string `":memory:` as
+To create a temporary in-memory database, use the special string `":memory:"` as
 a database file name. For more details, also see the documentation of the wrapped
 C API function.
 
