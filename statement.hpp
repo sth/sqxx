@@ -318,7 +318,7 @@ public:
 
 	/** Check if all result rows have been processed */
 	bool done() const { return completed; }
-	operator bool() const { return !completed; }
+	explicit operator bool() const { return !completed; }
 
 	class row_iterator : public std::iterator<std::input_iterator_tag, size_t> {
 	private:
