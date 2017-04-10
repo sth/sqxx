@@ -35,6 +35,9 @@ protected:
 	bool completed;
 
 public:
+	statement() noexcept : handle(nullptr), completed(false) {
+	}
+
 	/**
 	 * Constructs a statement object from a C API statement handle.
 	 *
