@@ -132,7 +132,7 @@ public:
 	 */
 	bool autocommit() const;
 
-	uint64_t last_insert_rowid() const;
+	int64_t last_insert_rowid() const;
 
 	/**
 	 * Get the database connection status.

@@ -97,14 +97,14 @@ bool complete(const std::string &sql);
  *
  * Wraps [`sqlite3_memory_used()`](http://www.sqlite.org/c3ref/memory_highwater.html)
  */
-uint64_t memory_used();
+int64_t memory_used();
 
 /**
  * Memory allocator statistics
  *
  * Wraps [`sqlite3_memory_highwater()`](http://www.sqlite.org/c3ref/memory_highwater.html)
  */
-uint64_t memory_highwater(bool reset=false);
+int64_t memory_highwater(bool reset=false);
 
 /**
  * Pseuso-random number generator

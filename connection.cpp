@@ -100,7 +100,7 @@ bool connection::autocommit() const {
 	return sqlite3_get_autocommit(handle);
 }
 
-uint64_t connection::last_insert_rowid() const {
+int64_t connection::last_insert_rowid() const {
 	return sqlite3_last_insert_rowid(handle);
 }
 
@@ -317,7 +317,7 @@ statement connection::prepare(const char *sql) {
 	int rv;
 	sqlite3_stmt *stmt = nullptr;
 
-	rv = sqlite3_prepare_v2(handle, sql, std::strlen(sql)+1, &stmt, nullptr);
+	rv = sqlite3_prepare_v2(handle, sql, int(std::strlen(sql)+1), &stmt, nullptr);
 	if (rv != SQLITE_OK) {
 		throw static_error(rv);
 	}

@@ -38,16 +38,16 @@ template<>
 std::string value::val<std::string>() const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const unsigned char *text = sqlite3_value_text(handle);
-	int bytes = sqlite3_value_bytes(handle);
-	return std::string(reinterpret_cast<const char*>(text), bytes);
+	auto bytes = sqlite3_value_bytes(handle);
+	return std::string(reinterpret_cast<const char*>(text), size_t(bytes));
 }
 
 template<>
 blob value::val<blob>() const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const void *data = sqlite3_value_blob(handle);
-	int len = sqlite3_value_bytes(handle);
-	return blob(data, len);
+	auto len = sqlite3_value_bytes(handle);
+	return blob(data, int(len));
 }
 
 value::operator int() const { return val<int>(); }
