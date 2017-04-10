@@ -64,7 +64,7 @@ class connection {
 private:
 	sqlite3 *handle;
 
-	friend class detail::connection_callback_table;
+	friend struct detail::connection_callback_table;
 	std::unique_ptr<detail::connection_callback_table> callbacks;
 
 	// On-demand initialization of callback table

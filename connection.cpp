@@ -22,8 +22,7 @@ struct collation_data_t {
 
 namespace detail {
 
-class connection_callback_table {
-public:
+struct connection_callback_table {
 	std::unique_ptr<connection::commit_handler_t> commit_handler;
 	std::unique_ptr<connection::rollback_handler_t> rollback_handler;
 	std::unique_ptr<connection::update_handler_t> update_handler;
