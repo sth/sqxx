@@ -22,8 +22,7 @@ struct collation_data_t {
 
 namespace detail {
 
-class connection_callback_table {
-public:
+struct connection_callback_table {
 	std::unique_ptr<connection::commit_handler_t> commit_handler;
 	std::unique_ptr<connection::rollback_handler_t> rollback_handler;
 	std::unique_ptr<connection::update_handler_t> update_handler;
@@ -51,6 +50,11 @@ connection::connection(const char *filename, int flags) : handle(nullptr) {
 
 connection:: connection(const std::string &filename, int flags) : handle(nullptr) {
 	open(filename, flags);
+}
+
+connection::connection(connection&& other) noexcept
+    : handle(other.handle), callbacks(std::move(other.callbacks)) {
+	other.handle = nullptr;
 }
 
 connection::~connection() noexcept {
@@ -100,7 +104,7 @@ bool connection::autocommit() const {
 	return sqlite3_get_autocommit(handle);
 }
 
-uint64_t connection::last_insert_rowid() const {
+int64_t connection::last_insert_rowid() const {
 	return sqlite3_last_insert_rowid(handle);
 }
 
@@ -317,12 +321,12 @@ statement connection::prepare(const char *sql) {
 	int rv;
 	sqlite3_stmt *stmt = nullptr;
 
-	rv = sqlite3_prepare_v2(handle, sql, std::strlen(sql)+1, &stmt, nullptr);
+	rv = sqlite3_prepare_v2(handle, sql, int(std::strlen(sql)+1), &stmt, nullptr);
 	if (rv != SQLITE_OK) {
 		throw static_error(rv);
 	}
 
-	return statement(*this, stmt);
+	return statement(stmt);
 }
 
 statement connection::prepare(const std::string &sql) {

@@ -12,7 +12,7 @@ namespace sqxx {
 
 // Aggregate function interoperability
 namespace detail {
-	class aggregate_data;
+	struct aggregate_data;
 }
 
 /** Wraps `struct sqlite3_context` */
@@ -90,7 +90,7 @@ public:
 
 private:
 	// This is used internally by our aggregate functions
-	friend class detail::aggregate_data;
+	friend struct detail::aggregate_data;
 	void* aggregate_context(int bytes);
 
 public:

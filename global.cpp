@@ -97,11 +97,11 @@ bool complete(const std::string &sql) {
 	return complete(sql.c_str());
 }
 
-uint64_t memory_used() {
+int64_t memory_used() {
 	return sqlite3_memory_used();
 }
 
-uint64_t memory_highwater(bool reset) {
+int64_t memory_highwater(bool reset) {
 	return sqlite3_memory_highwater(reset);
 }
 

@@ -9,8 +9,8 @@
 
 namespace sqxx {
 
-statement::statement(connection &conn_arg, sqlite3_stmt *handle_arg)
-		: handle(handle_arg), conn(conn_arg), completed(true) {
+statement::statement(sqlite3_stmt *handle_arg)
+    : handle(handle_arg), completed(true) {
 }
 
 statement::~statement() {
@@ -115,7 +115,7 @@ void statement::bind<const char*>(int idx, const char *value, bool copy) {
 
 template<>
 void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
-	int rv = sqlite3_bind_text(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	int rv = sqlite3_bind_text(handle, idx+1, value.c_str(), int(value.size()), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
@@ -123,7 +123,11 @@ void statement::bind<std::string>(int idx, const std::string &value, bool copy) 
 template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy) {
 	if (value.data) {
+#if !defined(sqlite3_bind_blob)
 		int rv = sqlite3_bind_blob(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
+		int rv = sqlite3_bind_blob64(handle, idx+1, value.data, unsigned(value.length), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
@@ -168,16 +172,16 @@ template<>
 std::string statement::val<std::string>(int idx) const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const unsigned char* text = sqlite3_column_text(handle, idx);
-	int bytes = sqlite3_column_bytes(handle, idx);
-	return std::string(reinterpret_cast<const char*>(text), bytes);
+	auto bytes = sqlite3_column_bytes(handle, idx);
+	return std::string(reinterpret_cast<const char*>(text), size_t(bytes));
 }
 
 template<>
 blob statement::val<blob>(int idx) const {
 	// Correct order to call functions according to http://www.sqlite.org/c3ref/column_blob.html
 	const void *data = sqlite3_column_blob(handle, idx);
-	int bytes = sqlite3_column_bytes(handle, idx);
-	return blob(data, bytes);
+	auto bytes = sqlite3_column_bytes(handle, idx);
+	return blob(data, int(bytes));
 }
 
 

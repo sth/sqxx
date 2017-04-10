@@ -21,11 +21,13 @@ public:
 	/** Wraps [`sqlite3_column_name()`](http://www.sqlite.org/c3ref/column_name.html) */
 	const char* name() const;
 	/** Wraps [`sqlite3_column_database_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
+#if defined(SQLITE_ENABLE_COLUMN_METADATA)
 	const char* database_name() const;
 	/** Wraps [`sqlite3_column_table_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* table_name() const;
 	/** Wraps [`sqlite3_column_origin_name()`](http://www.sqlite.org/c3ref/column_database_name.html) */
 	const char* origin_name() const;
+#endif
 
 	// TODO: Better return type
 	/** Wraps [`sqlite3_column_type()`](http://www.sqlite.org/c3ref/column_blob.html) */

@@ -57,13 +57,17 @@ void context::result(const char *value, bool copy) {
 
 template<>
 void context::result(const std::string &value, bool copy) {
-	sqlite3_result_text(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	sqlite3_result_text(handle, value.c_str(), int(value.size()), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 }
 
 template<>
 void context::result(const blob &value, bool copy) {
 	if (value.data) {
+#if !defined(sqlite3_result_blob)
 		sqlite3_result_blob(handle, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
+		sqlite3_result_blob64(handle, value.data, unsigned(value.length), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 	}
 	else {
 		sqlite3_result_zeroblob(handle, value.length);

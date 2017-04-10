@@ -31,27 +31,24 @@ class statement {
 private:
 	sqlite3_stmt *handle;
 
-public:
-	connection &conn;
-
 protected:
 	bool completed;
 
 public:
+	statement() noexcept : handle(nullptr), completed(false) {
+	}
+
 	/**
-	 * Constructs a statement object from a connection object and a C API
-	 * statement handle.
+	 * Constructs a statement object from a C API statement handle.
 	 *
 	 * Usually not called directly, use `connection::prepare()` instead.
-	 *
-	 * @conn_arg The connection object associated with the statement. A reference
-	 * is stored and the connection object must stay alive until the constructed
-	 * `statement` is destroyed.
+	 * The connection object associated with the statement must stay alive
+	 * until the `statement` is destroyed.
 	 *
 	 * @handle_arg A C API statement handle. The constructed `statement` takes
 	 * ownership of the C API handle and will close it on destruction.
 	 */
-	statement(connection &conn_arg, sqlite3_stmt *handle_arg);
+	explicit statement(sqlite3_stmt *handle_arg);
 	/*
 	 * Destroys the object, closing the managed C API handle, if necessary.
 	 */
@@ -61,10 +58,19 @@ public:
 	statement(const statement &) = delete;
 	/** Copy assignment is disabled */
 	statement& operator=(const statement&) = delete;
+
 	/** Move construction is enabled */
-	statement(statement &&) = default;
+	statement(statement&& other) noexcept
+	    : handle(other.handle), completed(other.completed) {
+		other.handle = nullptr;
+	}
+
 	/** Move assignment is enabled */
-	statement& operator=(statement&&) = default;
+	statement& operator=(statement&& other) noexcept {
+		this->~statement();
+		return *::new (static_cast<void*>(this)) auto(
+		    std::move(other));
+	}
 
 
 	/**
@@ -318,7 +324,7 @@ public:
 
 	/** Check if all result rows have been processed */
 	bool done() const { return completed; }
-	operator bool() const { return !completed; }
+	explicit operator bool() const { return !completed; }
 
 	class row_iterator : public std::iterator<std::input_iterator_tag, size_t> {
 	private:

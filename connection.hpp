@@ -64,7 +64,7 @@ class connection {
 private:
 	sqlite3 *handle;
 
-	friend class detail::connection_callback_table;
+	friend struct detail::connection_callback_table;
 	std::unique_ptr<detail::connection_callback_table> callbacks;
 
 	// On-demand initialization of callback table
@@ -79,8 +79,13 @@ public:
 	// Don't copy, move
 	connection(const connection&) = delete;
 	connection& operator=(const connection&) = delete;
-	connection(connection&&) = default;
-	connection& operator=(connection&&) = default;
+
+	connection(connection&& other) noexcept;
+	connection& operator=(connection&& other) noexcept {
+		this->~connection();
+		return *::new (static_cast<void*>(this)) auto(
+		    std::move(other));
+	}
 
 	/**
 	 * The database file name.
@@ -132,7 +137,7 @@ public:
 	 */
 	bool autocommit() const;
 
-	uint64_t last_insert_rowid() const;
+	int64_t last_insert_rowid() const;
 
 	/**
 	 * Get the database connection status.
