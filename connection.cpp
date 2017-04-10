@@ -52,6 +52,11 @@ connection:: connection(const std::string &filename, int flags) : handle(nullptr
 	open(filename, flags);
 }
 
+connection::connection(connection&& other) noexcept
+    : handle(other.handle), callbacks(std::move(other.callbacks)) {
+	other.handle = nullptr;
+}
+
 connection::~connection() noexcept {
 	if (handle) {
 		close();
@@ -321,7 +326,7 @@ statement connection::prepare(const char *sql) {
 		throw static_error(rv);
 	}
 
-	return statement(*this, stmt);
+	return statement(stmt);
 }
 
 statement connection::prepare(const std::string &sql) {

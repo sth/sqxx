@@ -9,8 +9,8 @@
 
 namespace sqxx {
 
-statement::statement(connection &conn_arg, sqlite3_stmt *handle_arg)
-		: handle(handle_arg), conn(conn_arg), completed(true) {
+statement::statement(sqlite3_stmt *handle_arg)
+    : handle(handle_arg), completed(true) {
 }
 
 statement::~statement() {

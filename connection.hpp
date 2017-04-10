@@ -79,8 +79,13 @@ public:
 	// Don't copy, move
 	connection(const connection&) = delete;
 	connection& operator=(const connection&) = delete;
-	connection(connection&&) = default;
-	connection& operator=(connection&&) = default;
+
+	connection(connection&& other) noexcept;
+	connection& operator=(connection&& other) noexcept {
+		this->~connection();
+		return *::new (static_cast<void*>(this)) auto(
+		    std::move(other));
+	}
 
 	/**
 	 * The database file name.
