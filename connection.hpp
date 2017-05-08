@@ -409,16 +409,15 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename Function>
-	std::enable_if_t<
-		std::is_function<std::remove_pointer_t<std::decay_t<Function>>>::value,
-		void>
+	std::enable_if_t<detail::decays_to_function_v<Function>, void>
 	create_function(const char *name, Function fun);
 
 	template<typename Callable>
-	std::enable_if_t<
-		!std::is_function<std::remove_pointer_t<std::decay_t<Callable>>>::value,
-		void>
+	std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
 	create_function(const char *name, Callable fun);
+
+	template<typename Callable>
+	void create_function(const std::string &name, Callable fun);
 
 	/**
 	 * Create or redefine a SQL function.
@@ -440,10 +439,12 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename Function, Function *Fun>
-	std::enable_if_t<
-		std::is_function<Function>::value,
-		void>
+	std::enable_if_t<std::is_function<Function>::value, void>
 	create_function(const char *name);
+
+	template<typename Function, Function *Fun>
+	std::enable_if_t<std::is_function<Function>::value, void>
+	create_function(const std::string &name);
 
 	/** TODO:
 	 * Define a SQL function with variable number of arguments. The Callable will be

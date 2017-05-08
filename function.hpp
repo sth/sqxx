@@ -248,9 +248,7 @@ public:
 
 // A function pointer passed as a function argument
 template<typename Function>
-std::enable_if_t<
-	std::is_function<std::remove_pointer_t<std::decay_t<Function>>>::value
-	>
+std::enable_if_t<detail::decays_to_function_v<Function>, void>
 connection::create_function(const char *name, Function fun) {
 	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
 	typedef callable_traits<FunctionType> traits;
@@ -263,9 +261,7 @@ connection::create_function(const char *name, Function fun) {
 }
 
 template<typename Callable>
-std::enable_if_t<
-	!std::is_function<std::remove_pointer_t<std::decay_t<Callable>>>::value
-	>
+std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
 connection::create_function(const char *name, Callable callable) {
 	typedef std::decay_t<Callable> CallableType;
 	typedef callable_traits<CallableType> traits;

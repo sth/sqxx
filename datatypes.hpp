@@ -37,6 +37,12 @@ struct is_selected<T, T2, Ts...> {
 	static const bool value = std::is_same<T, T2>::value || is_selected<T, Ts...>::value;
 };
 
+template<typename T>
+using decays_to_function = std::is_function<std::remove_pointer_t<std::decay_t<T>>>;
+
+template<typename T>
+constexpr bool decays_to_function_v = decays_to_function<T>::value;
+
 }
 
 /** `std::enable_if<>` for all types in the `Ts...` list */
