@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 
 	std::vector<int> data;
 	for (auto i : st) {
-		i = i; // suppress "unused variable" warning
+		sqxx::unused(i); // suppress "unused variable" warning
 		data.push_back(st.val<int>(0));
 	}
 
