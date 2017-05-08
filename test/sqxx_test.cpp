@@ -250,16 +250,29 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 	BOOST_CHECK_EQUAL(data[0], 1);
 }
 
+int plustwo(int i) { return i + 2; }
+int plusthree(int i) { return i + 3; }
+
 BOOST_AUTO_TEST_CASE(create_function) {
 	tab ctx;
-	bool called = false;
+	bool called;
+
+	ctx.conn.create_function("plustwo", plustwo);
+	auto st1 = ctx.conn.run("select plustwo(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st1.val<int>(0), 13);
+
+	ctx.conn.create_function<int (int), plusthree>("plusthree");
+	auto st2 = ctx.conn.run("select plusthree(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st2.val<int>(0), 14);
+
+	called = false;
 	ctx.conn.create_function("plusfive", std::function<int (int)>([&](int i) {
 		called = true;
 		BOOST_CHECK_EQUAL(i, 11);
 		return i+5;
 	}));
-	auto st1 = ctx.conn.run("select plusfive(v) from items where id = 1");
-	BOOST_CHECK_EQUAL(st1.val<int>(0), 16);
+	auto st3 = ctx.conn.run("select plusfive(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st3.val<int>(0), 16);
 	BOOST_CHECK(called);
 
 	called = false;
@@ -268,8 +281,20 @@ BOOST_AUTO_TEST_CASE(create_function) {
 		BOOST_CHECK_EQUAL(i, 11);
 		return i+6;
 	});
-	auto st2 = ctx.conn.run("select plussix(v) from items where id = 1");
-	BOOST_CHECK_EQUAL(st2.val<int>(0), 17);
+	auto st4 = ctx.conn.run("select plussix(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st4.val<int>(0), 17);
+	BOOST_CHECK(called);
+
+	// Test if it works with std::ref()
+	called = false;
+	auto plusseven = [&](int i) {
+		called = true;
+		BOOST_CHECK_EQUAL(i, 11);
+		return i+7;
+	};
+	ctx.conn.create_function("plusseven", std::ref(plusseven));
+	auto st5 = ctx.conn.run("select plusseven(v) from items where id = 1");
+	BOOST_CHECK_EQUAL(st5.val<int>(0), 18);
 	BOOST_CHECK(called);
 }
 

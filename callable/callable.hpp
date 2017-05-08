@@ -47,6 +47,10 @@ template<typename Callable>
 struct callable_traits_d : detail::callable_traits_memfnp<decltype(&Callable::operator())> {
 };
 
+template<typename Callable>
+struct callable_traits_d<std::reference_wrapper<Callable>> : detail::callable_traits_memfnp<decltype(&Callable::operator())> {
+};
+
 // functions
 template<typename Ret, typename... Args>
 struct callable_traits_d<Ret (Args...)> : detail::callable_traits_fn<Ret (Args...)> {

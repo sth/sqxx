@@ -45,8 +45,7 @@ class statement;
 
 namespace detail {
 	// Helpers for user defined callbacks/sql functions
-	struct connection_callback_table;
-	struct function_data;
+	class connection_callback_table;
 	struct aggregate_data;
 }
 
@@ -386,26 +385,68 @@ public:
 	//void set_unlock_handler(const unlock_handler_t &fun);
 	//void set_unlock_handler();
 
-private:
-	void create_function_p(const char *name, int nargs, detail::function_data *fundata);
-
 public:
 	/**
 	 * Create or redefine a SQL function.
 	 *
+	 * For example to create an `increment` SQL function form a `addone`
+	 * C++ function:
+	 *
+	 * ```
+	 * int addone(int i) { return i+1; }
+	 *
+	 * conn.create_function("increment", addone);
+	 * ```
+	 *
+	 * If the callable is a function pointer, it is used directly.
+	 *
+	 * If it's a callable object (`std::function<>`, lambda function object, ...),
+	 * a copy is made and stored for the lifetime of the sqlite function.
+	 *
+	 * If you need a reference to the callable object instead, wrap
+	 * it with std::ref().
+	 *
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
-	template<typename R, typename... Ps>
-	void create_function(const char *name, const std::function<R (Ps...)> &fun);
+	template<typename Function>
+	std::enable_if_t<
+		std::is_function<std::remove_pointer_t<std::decay_t<Function>>>::value,
+		void>
+	create_function(const char *name, Function fun);
 
-	/** Define a SQL function, automatically deduce the number of arguments */
 	template<typename Callable>
-	void create_function(const char *name, Callable f);
+	std::enable_if_t<
+		!std::is_function<std::remove_pointer_t<std::decay_t<Callable>>>::value,
+		void>
+	create_function(const char *name, Callable fun);
 
-	//template<typename R, typename... Ps>
-	//void create_function_ctx(const char *name, const std::function<R (context&, Ps...)> &fun);
+	/**
+	 * Create or redefine a SQL function.
+	 *
+	 * This overload takes the function as a template parameter. You need to
+	 * specify the function type explicitly. For example, to create an `increment`
+	 * SQL function form a `addone`  C++ function:
+	 *
+	 * ```
+	 * int addone(int i) { return i+1; }
+	 *
+	 * conn.create_function<int (int), addone>("increment");
+	 * ```
+	 *
+	 * This creates slightly more efficient SQL functions than passing a function
+	 * pointer as parameter to the other overloades since `addone` is known at
+	 * compile time and can be inlined/...
+	 *
+	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
+	 */
+	template<typename Function, Function *Fun>
+	std::enable_if_t<
+		std::is_function<Function>::value,
+		void>
+	create_function(const char *name);
 
-	/** Define a SQL function with variable number of arguments. The Callable will be
+	/** TODO:
+	 * Define a SQL function with variable number of arguments. The Callable will be
 	 * called with a single parameter, a std::vector<sqxx::value>.
 	 */
 	template<typename Callable>

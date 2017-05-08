@@ -11,6 +11,13 @@
 #include <functional>
 #include <memory>
 
+// Function types with C calling convention for callbacks
+// https://stackoverflow.com/a/5590050/
+extern "C" typedef void sqxx_function_call_type(sqlite3_context*, int, sqlite3_value**);
+extern "C" typedef void sqxx_function_destroy_type(void*);
+
+extern "C" void* sqlite3_user_data(sqlite3_context*);
+
 namespace sqxx {
 
 namespace detail {
@@ -45,47 +52,85 @@ R apply_value_array(Fun f, sqlite3_value **argv) {
 }
 
 
-// Data associated with a function
+void function_register(sqlite3 *handle, const char *name, int argc,
+		void *data, sqxx_function_call_type *fun, sqxx_function_destroy_type *destroy);
 
-struct function_data {
-	virtual ~function_data() {
-	}
-	virtual void call(context &ctx, int argc, sqlite3_value **argv) = 0;
-};
 
-template<size_t NArgs, typename R, typename... Ps>
-struct function_data_t : function_data {
-	std::function<R (Ps...)> fun;
+template<typename Callable>
+sqxx_function_destroy_type function_destroy_object;
 
-	function_data_t(const std::function<R (Ps...)> &fun_arg) : fun(fun_arg) {
-	}
+template<typename Callable>
+void function_destroy_object(void *data) {
+	delete reinterpret_cast<Callable*>(data);
+}
 
-	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
-		if (argc != NArgs) {
+
+
+// Create a SQL function from a statically known function pointer
+
+template<typename Function, Function *Fun>
+sqxx_function_call_type function_call_staticfptr;
+
+template<typename Function, Function *Fun>
+void function_call_staticfptr(sqlite3_context *handle, int argc, sqlite3_value** argv) {
+	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
+	typedef callable_traits<FunctionType> traits;
+	context ctx(handle);
+	try {
+		if (argc != traits::argc) {
 			ctx.result_error_misuse();
+			return;
 		}
-		else {
-			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
-		}
+		ctx.result<typename traits::return_type>(
+				apply_value_array<traits::argc, typename traits::return_type>(Fun, argv)
+			);
 	}
-};
-
-template<size_t NArgs, typename Fun, typename R, typename... Ps>
-struct function_data_gen_t : function_data {
-	Fun fun;
-
-	function_data_gen_t(Fun fun_arg) : fun(std::forward<Fun>(fun_arg)) {
+	catch (const error &e) {
+		ctx.result_error_code(e.code);
 	}
+	catch (const std::bad_alloc &) {
+		ctx.result_error_nomem();
+	}
+	catch (const std::exception &e) {
+		ctx.result_error(e.what());
+	}
+	catch (...) {
+		ctx.result_error_misuse();
+	}
+}
 
-	virtual void call(context &ctx, int argc, sqlite3_value **argv) override {
-		if (argc != NArgs) {
+
+// Create a SQL function from a callable object
+template<typename Callable>
+sqxx_function_call_type function_call_ptr;
+
+template<typename Callable>
+void function_call_ptr(sqlite3_context *handle, int argc, sqlite3_value** argv) {
+	typedef callable_traits<Callable> traits;
+	context ctx(handle);
+	Callable *callable = reinterpret_cast<Callable*>(sqlite3_user_data(handle));
+	try {
+		if (argc != traits::argc) {
 			ctx.result_error_misuse();
+			return;
 		}
-		else {
-			ctx.result<R>(apply_value_array<NArgs, R>(fun, argv));
-		}
+		ctx.result<typename traits::return_type>(
+				apply_value_array<traits::argc, typename traits::return_type>(*callable, argv)
+			);
 	}
-};
+	catch (const error &e) {
+		ctx.result_error_code(e.code);
+	}
+	catch (const std::bad_alloc &) {
+		ctx.result_error_nomem();
+	}
+	catch (const std::exception &e) {
+		ctx.result_error(e.what());
+	}
+	catch (...) {
+		ctx.result_error_misuse();
+	}
+}
 
 
 // Data associated with an aggregate
@@ -201,15 +246,51 @@ public:
 
 // Implementation of `connection` member functions
 
-template<typename R, typename... Ps>
-void connection::create_function(const char *name, const std::function<R (Ps...)> &fun) {
-	static const size_t NArgs = parameter_pack_traits<Ps...>::count;
-	create_function_p(name, NArgs, new detail::function_data_t<NArgs, R, Ps...>(fun));
+// A function pointer passed as a function argument
+template<typename Function>
+std::enable_if_t<
+	std::is_function<std::remove_pointer_t<std::decay_t<Function>>>::value
+	>
+connection::create_function(const char *name, Function fun) {
+	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
+	typedef callable_traits<FunctionType> traits;
+
+	// We store the function pointer as sqlite user data.
+	// There is no special cleanup necessary for this user data.
+	FunctionType *fptr = fun;
+	detail::function_register(handle, name, traits::argc,
+			reinterpret_cast<void*>(fptr), detail::function_call_ptr<FunctionType>, nullptr);
 }
 
 template<typename Callable>
-void connection::create_function(const char *name, Callable fun) {
-	create_function(name, to_stdfunction(std::forward<Callable>(fun)));
+std::enable_if_t<
+	!std::is_function<std::remove_pointer_t<std::decay_t<Callable>>>::value
+	>
+connection::create_function(const char *name, Callable callable) {
+	typedef std::decay_t<Callable> CallableType;
+	typedef callable_traits<CallableType> traits;
+
+	// We store a copy of the callable as sqlite user data.
+	// We register a "destructor" that deletes this copy when the function
+	// gets removed.
+	CallableType *cptr = new CallableType(callable);
+	detail::function_register(handle, name, traits::argc,
+			reinterpret_cast<void*>(cptr), detail::function_call_ptr<CallableType>, detail::function_destroy_object<CallableType>);
+}
+
+// A function specified as a template parameter
+template<typename Function, Function *Fun>
+std::enable_if_t<
+	std::is_function<Function>::value
+	>
+connection::create_function(const char *name) {
+	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
+	typedef callable_traits<FunctionType> traits;
+
+	// Function type is known statically and we don't need to store any
+	// special sqlite user data.
+	detail::function_register(handle, name, traits::argc,
+			nullptr, detail::function_call_staticfptr<Function, Fun>, nullptr);
 }
 
 
