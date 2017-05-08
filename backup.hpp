@@ -10,32 +10,6 @@ struct sqlite3_backup;
 
 namespace sqxx {
 
-template <typename Stepped>
-class stepping_iterator {
-private:
-	Stepped *s;
-
-public:
-	explicit stepping_iterator(Stepped *s_arg = nullptr) : s(s_arg) {
-	}
-
-	Stepped& operator*() const {
-		return *s;
-	}
-	stepping_iterator& operator++() {
-		if (!s->step())
-			s = nullptr;
-	}
-
-	bool operator==(const stepping_iterator &other) const {
-		return (s == other.s);
-	}
-	bool operator!=(const stepping_iterator &other) const {
-		return !(*this == other);
-	}
-};
-
-
 /**
  * Copying of tables from one DB to another.
  *
@@ -62,14 +36,49 @@ public:
 	int pagecount();
 
 	// Support for iterator access to walk over the backup steps.
+	class step_iterator {
+	private:
+		backup *b;
+		int stepsize;
 
-	typedef stepping_iterator<backup> iterator;
+	public:
+		explicit step_iterator(backup *b_arg = nullptr, int stepsize_arg = 1)
+			: b(b_arg), stepsize(stepsize_arg) {
+		}
+		step_iterator(const step_iterator&) = delete;
+		step_iterator& operator=(const step_iterator&) = delete;
+		step_iterator(step_iterator&&) = default;
+		step_iterator& operator=(step_iterator&&) = default;
+
+		backup& operator*() const {
+			// TODO: return curpagenum or sth.?
+			return *b;
+		}
+
+		step_iterator& operator++() {
+			if (!b->step(stepsize))
+				b = nullptr;
+			return *this;
+		}
+		// Not reasonably implementable with correct return type:
+		void operator++(int) {
+			++*this;
+		}
+
+		bool operator==(const step_iterator &other) const {
+			return (b == other.b);
+		}
+		bool operator!=(const step_iterator &other) const {
+			return !(*this == other);
+		}
+	};
+
 	/** Iterator interface, uses `step()` internally to iterate through the complete backup */
-	iterator begin() {
-		return iterator(this);
+	step_iterator begin(int stepsize = 1) {
+		return step_iterator(this, stepsize);
 	}
-	iterator end() {
-		return iterator();
+	step_iterator end() {
+		return step_iterator();
 	}
 
 	/** Access to raw `struct sqlite3_backup*` */
