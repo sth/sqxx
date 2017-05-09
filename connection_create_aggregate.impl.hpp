@@ -165,11 +165,23 @@ void connection::create_aggregate(const char *name,
 			detail::function_destroy_object<data_t>);
 }
 
+template<typename State, typename StepCallable, typename FinalCallable>
+void connection::create_aggregate(const std::string &name, State &&zero, StepCallable step_fun,
+		FinalCallable final_fun) {
+	create_aggregate(name.c_str(), std::forward<State>(zero), std::forward<StepCallable>(step_fun),
+			std::forward<FinalCallable>(final_fun));
+}
+
 template<typename State, typename StepCallable>
 void connection::create_aggregate(const char *name, State &&zero, StepCallable step_fun) {
 	create_aggregate<State, StepCallable>(name, std::forward<State>(zero), step_fun,
 			[](const State &state) -> State { return state; }
 		);
+}
+
+template<typename State, typename StepCallable>
+void connection::create_aggregate(const std::string &name, State &&zero, StepCallable step_fun) {
+	create_aggregate(name.c_str(), std::forward<State>(zero), std::forward<StepCallable>(step_fun));
 }
 
 } // namespace sqxx

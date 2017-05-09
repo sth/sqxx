@@ -501,6 +501,10 @@ public:
 	void create_aggregate(const char *name, State &&zero, StepCallable step_fun,
 			FinalCallable final_fun);
 
+	template<typename State, typename StepCallable, typename FinalCallable>
+	void create_aggregate(const std::string &name, State &&zero, StepCallable step_fun,
+			FinalCallable final_fun);
+
 	/**
 	 * Register an aggregation function without a special `final_fun` function.
 	 *
@@ -508,6 +512,9 @@ public:
 	 */
 	template<typename State, typename StepCallable>
 	void create_aggregate(const char *name, State &&zero, StepCallable step_fun);
+
+	template<typename State, typename StepCallable>
+	void create_aggregate(const std::string &name, State &&zero, StepCallable step_fun);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }
