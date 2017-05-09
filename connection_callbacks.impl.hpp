@@ -9,7 +9,6 @@
 // Function types with C calling convention for callbacks
 // https://stackoverflow.com/a/5590050/
 extern "C" typedef void sqxx_function_call_type(sqlite3_context*, int, sqlite3_value**);
-extern "C" typedef void sqxx_function_final_type(sqlite3_context*);
 extern "C" typedef void sqxx_function_destroy_type(void*);
 
 extern "C" void* sqlite3_user_data(sqlite3_context*);

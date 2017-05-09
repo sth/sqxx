@@ -186,19 +186,34 @@ public:
 	 *
 	 * Wraps [`sqlite3_create_collation_v2()`](http://www.sqlite.org/c3ref/create_collation.html)
 	 */
-	typedef std::function<int (int, const char*, int, const char*)> collation_function_t;
-	void create_collation(const char *name, const collation_function_t &coll);
+	template<typename Function>
+	std::enable_if_t<detail::decays_to_function_v<Function>, void>
+	create_collation(const char *name, Function fun);
 
 	template<typename Callable>
-	void create_collation(const char *name, Callable coll);
+	std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
+	create_collation(const char *name, Callable fun);
+
 	template<typename Callable>
-	void create_collation(const std::string &name, Callable coll);
+	void create_collation(const std::string &name, Callable fun);
+
+	template<typename Function, Function *Fun>
+	std::enable_if_t<std::is_function<Function>::value, void>
+	create_collation(const char *name);
+
+	template<typename Function, Function *Fun>
+	std::enable_if_t<std::is_function<Function>::value, void>
+	create_collation(const std::string &name);
+
 
 	typedef std::function<int (const std::string &, const std::string &)> collation_function_stdstr_t;
 	void create_collation_stdstr(const char *name, const collation_function_stdstr_t &coll);
 
 	template<typename Callable>
 	void create_collation_stdstr(const char *name, Callable coll);
+
+	void remove_collation(const char *name);
+	void remove_collation(const std::string &name);
 
 	/**
 	 * Create a sql prepared statement
@@ -526,6 +541,7 @@ public:
 #include "connection_callbacks.impl.hpp"
 #include "connection_create_function.impl.hpp"
 #include "connection_create_aggregate.impl.hpp"
+#include "connection_create_collation.impl.hpp"
 
 #endif // SQXX_CONNECTION_HPP_INCLUDED
 

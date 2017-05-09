@@ -4,6 +4,9 @@
 #if !defined(SQXX_CONNECTION_CREATE_FUNCTION_IMPL_HPP_INCLUDED)
 #define SQXX_CONNECTION_CREATE_FUNCTION_IMPL_HPP_INCLUDED
 
+extern "C" typedef void sqxx_function_call_type(sqlite3_context*, int, sqlite3_value**);
+extern "C" typedef void sqxx_function_destroy_type(void*);
+
 namespace sqxx {
 namespace detail {
 

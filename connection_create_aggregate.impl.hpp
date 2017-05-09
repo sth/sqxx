@@ -4,6 +4,10 @@
 #if !defined(SQXX_CONNECTION_CREATE_AGGREGATE_IMPL_HPP_INCLUDED)
 #define SQXX_CONNECTION_CREATE_AGGREGATE_IMPL_HPP_INCLUDED
 
+extern "C" typedef void sqxx_aggregate_step_type(sqlite3_context*, int, sqlite3_value**);
+extern "C" typedef void sqxx_aggregate_final_type(sqlite3_context*);
+extern "C" typedef void sqxx_aggregate_destroy_type(void*);
+
 namespace sqxx {
 namespace detail {
 
@@ -89,7 +93,7 @@ public:
 
 
 template<typename StateD, typename StepD, typename FinalD>
-sqxx_function_call_type aggregate_call_step;
+sqxx_aggregate_step_type aggregate_call_step;
 
 template<typename StateD, typename StepD, typename FinalD>
 void aggregate_call_step(sqlite3_context *handle, int argc, sqlite3_value** argv) {
@@ -114,7 +118,7 @@ void aggregate_call_step(sqlite3_context *handle, int argc, sqlite3_value** argv
 }
 
 template<typename StateD, typename StepD, typename FinalD>
-sqxx_function_final_type aggregate_call_final;
+sqxx_aggregate_final_type aggregate_call_final;
 
 template<typename StateD, typename StepD, typename FinalD>
 void aggregate_call_final(sqlite3_context *handle) {
@@ -139,8 +143,8 @@ void aggregate_call_final(sqlite3_context *handle) {
 }
 
 void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, void *data,
-		sqxx_function_call_type *stepfun, sqxx_function_final_type *finalfun,
-		sqxx_function_destroy_type *destroy);
+		sqxx_aggregate_step_type *stepfun, sqxx_aggregate_final_type *finalfun,
+		sqxx_aggregate_destroy_type *destroy);
 
 } // namespace detail
 

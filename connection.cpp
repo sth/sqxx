@@ -47,12 +47,22 @@ void create_function_register(sqlite3 *handle, const char *name, int argc,
 }
 
 void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, void *adat,
-		sqxx_function_call_type *stepfun, sqxx_function_final_type *finalfun,
-		sqxx_function_destroy_type *destroy) {
+		sqxx_aggregate_step_type *stepfun, sqxx_aggregate_final_type *finalfun,
+		sqxx_aggregate_destroy_type *destroy) {
 	int rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, adat,
 			nullptr, stepfun, finalfun, destroy);
 	if (rv != SQLITE_OK) {
 		// Registered destructor is called automatically, no need to delete |adat| ourselves
+		throw static_error(rv);
+	}
+}
+
+void create_collation_register(sqlite3 *handle, const char *name, void *data,
+		sqxx_collation_compare_type *fun, sqxx_collation_destroy_type *destroy) {
+	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, fun, destroy);
+	if (rv != SQLITE_OK) {
+		if (destroy)
+			destroy(data);
 		throw static_error(rv);
 	}
 }
@@ -230,51 +240,6 @@ void connection::close() noexcept {
 	handle = nullptr;
 }
 
-/* Collation functions.
- * 
- * Strings passed to collation callback functions are not null-terminated.
- */
-extern "C"
-int sqxx_call_collation_compare(void *data, int llen, const void *lstr, int rlen, const void *rstr) {
-	typedef connection::collation_function_t cf_t;
-	cf_t *fun = reinterpret_cast<cf_t*>(data);
-	try {
-		return (*fun)(
-				llen, reinterpret_cast<const char*>(lstr),
-				rlen, reinterpret_cast<const char*>(rstr)
-			);
-	}
-	catch (...) {
-		handle_callback_exception("collation function");
-		return 0;
-	}
-}
-
-extern "C"
-void sqxx_call_collation_destroy(void *data) {
-	typedef connection::collation_function_t cf_t;
-	cf_t *fun = reinterpret_cast<cf_t*>(data);
-	delete fun;
-}
-
-void connection::create_collation(const char *name, const collation_function_t &coll) {
-	typedef connection::collation_function_t cf_t;
-	int rv;
-	if (coll) {
-		cf_t *data = new cf_t(coll);
-		rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, sqxx_call_collation_compare, sqxx_call_collation_destroy);
-		if (rv != SQLITE_OK) {
-			delete data;
-			throw static_error(rv);
-		}
-	}
-	else {
-		rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, nullptr, nullptr, nullptr);
-		if (rv != SQLITE_OK)
-			throw static_error(rv);
-	}
-}
-
 /*
 void connection::create_str_collation(const char *name, const collation_str_function_t &coll) {
 	// TODO: in the lambda, coll is a copy of the function or only a copy of the reference?
@@ -332,6 +297,18 @@ statement connection::run(const char *sql) {
 
 statement connection::run(const std::string &sql) {
 	return run(sql.c_str());
+}
+
+void connection::remove_collation(const char *name) {
+	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8,
+			nullptr, nullptr, nullptr);
+	if (rv != SQLITE_OK) {
+		throw static_error(rv);
+	}
+}
+
+void connection::remove_collation(const std::string &name) {
+	remove_collation(name.c_str());
 }
 
 statement connection::prepare(const char *sql) {
