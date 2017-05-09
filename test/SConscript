@@ -11,6 +11,7 @@ env_test.Append(
 test_src = Split('''
 	driver.cpp
    sqxx_test.cpp
+	examples_text.cpp
    ''')
 sqxx_test = env_test.Program('#/sqxx_test', test_src + [lib])
 sqxx_test_run = Alias('sqxx_test_run', [sqxx_test], env_test.Action('./sqxx_test'))

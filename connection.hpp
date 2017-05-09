@@ -46,7 +46,6 @@ class statement;
 namespace detail {
 	// Helpers for user defined callbacks/sql functions
 	class connection_callback_table;
-	struct aggregate_data;
 }
 
 /** Metadata for a table column */
@@ -453,20 +452,53 @@ public:
 	template<typename Callable>
 	void create_function_vararg(const char *name, Callable f);
 
-private:
-	void create_aggregate_p(const char *name, int nargs, detail::aggregate_data *aggrdata);
-
 public:
 	/**
-	 * Register an aggregation function
+	 * Register an aggregation function.
+	 *
+	 * An aggregate function can be used to calculate a combined value
+	 * over all the rows in a Sql query result.
+	 *
+	 * An aggregate calculation consists of some internal state and two
+	 * functions, `step_fun` and `final_fun`, that calculate the aggregated value.
+	 * The `step_fun` function is called for each value that should be aggregated
+	 * and modifies the internal state, `final_fun` is called once in
+	 * the end and calculates the final result from the internal state (if
+	 * necessary).
+	 *
+	 * An aggregate definition requires three parts:
+	 * - `zero`: A state value that is used as an initial value in aggregate
+	 *   calculations. This can be an arbitrary copyable type `State`.
+	 * - `step_fun`: A stepping function, that is called for each value that should
+	 *   be aggregated. It should have a signature like `void step_fun(State&, Value val)`
+	 *   and modify the state passed as first parameter. `Value` should be a type that
+	 *   `sqxx::value` can be converted to.
+	 *   Multiple `Value` arguments are also possible for multi-parameter aggregates.
+	 * - `final_fun`: A finalization function that is called in the end to produce
+	 *   the final result. It should have a signature like `Result final_fun(const State&)`
+	 *   where `Result` is a type that can be converted to `sqxx::value`.
+	 *
+	 * For example to add a function that calculates the 
+	 * ```
+	 * struct geom_state { int64_t sum = 0; int64_t count = 0; };
+	 *
+	 * auto geom_step = [](geom_state &state, int64_t n) {
+	 *    state.count++;
+	 *    state.sum += n*n;
+	 * };
+	 *
+	 * auto geom_final = [](const geom_state &state) -> double {
+	 * 	return sqrt(state.sum * 1.0 / state.count);
+	 * }
+	 *
+	 * conn.create_aggregate("geom", geom_state(), geom_step, geom_final);
+	 * conn.run("SELECT geom(v) FROM values");
+	 * ```
+	 *
+	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
-	template<typename State, typename Result, typename... Args>
-	void create_aggregate(const char *name, State zero,
-			const std::function<void (State&, Args...)> &stepfun,
-			const std::function<Result (const State&)> &finalfun);
-
 	template<typename State, typename StepCallable, typename FinalCallable>
-	void create_aggregate(const char *name, State zero, StepCallable stepfun, FinalCallable finalfun);
+	void create_aggregate(const char *name, State &&zero, StepCallable step_fun, FinalCallable final_fun);
 
 	/**
 	 * Register a simple accumulator/reduce function as an aggregate
@@ -484,6 +516,9 @@ public:
 } // namespace sqxx
 
 #include "connection.impl.hpp"
+#include "connection_callbacks.impl.hpp"
+#include "connection_create_function.impl.hpp"
+#include "connection_create_aggregate.impl.hpp"
 
 #endif // SQXX_CONNECTION_HPP_INCLUDED
 

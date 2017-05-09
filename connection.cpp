@@ -36,6 +36,27 @@ public:
 	std::unique_ptr<collation_data_t> collation_data;
 };
 
+void create_function_register(sqlite3 *handle, const char *name, int argc,
+		void *data, sqxx_function_call_type *fun, sqxx_function_destroy_type *destroy) {
+	int rv = sqlite3_create_function_v2(handle, name, argc, SQLITE_UTF8, data,
+			fun, nullptr, nullptr, destroy);
+	if (rv != SQLITE_OK) {
+		// Registered destructor is called automatically, no need to delete |adat| ourselves
+		throw static_error(rv);
+	}
+}
+
+void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, void *adat,
+		sqxx_function_call_type *stepfun, sqxx_function_final_type *finalfun,
+		sqxx_function_destroy_type *destroy) {
+	int rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, adat,
+			nullptr, stepfun, finalfun, destroy);
+	if (rv != SQLITE_OK) {
+		// Registered destructor is called automatically, no need to delete |adat| ourselves
+		throw static_error(rv);
+	}
+}
+
 } // namespace detail
 
 

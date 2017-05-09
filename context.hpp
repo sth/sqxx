@@ -10,11 +10,6 @@ struct sqlite3_context;
 
 namespace sqxx {
 
-// Aggregate function interoperability
-namespace detail {
-	class aggregate_data;
-}
-
 /** Wraps `struct sqlite3_context` */
 class context {
 private:
@@ -88,12 +83,15 @@ public:
 	if_selected_type<R, void, std::string, blob>
 	result(const R &value, bool copy=true);
 
-private:
-	// This is used internally by our aggregate functions
-	friend class detail::aggregate_data;
+	/**
+	 * Returns the current aggregation function context.
+	 * Used internally by `connection::create_aggregate`. Do not use while in an
+	 * aggregate registered with sqxx.
+	 *
+	 * Wraps [`sqlite3_aggregate_context`](https://sqlite.org/c3ref/aggregate_context.html)
+	 */
 	void* aggregate_context(int bytes);
 
-public:
 	/**
 	 * Returns a raw pointer to the underlying `struct sqlite3_context`.
 	 */
