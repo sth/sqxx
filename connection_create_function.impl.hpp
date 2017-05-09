@@ -132,6 +132,23 @@ void connection::create_function(const std::string &name) {
 	create_function<Function, Fun>(name.c_str());
 }
 
+// We could add overloads that allow removing a function by not explicitly specifying
+// it's arity. But is that really usefull?
+//
+// A call like `remove_function("foo", some_fun)` might be misleading, since it wouldn't
+// just remove `some_fun` if it's registered, but any "foo" function with the same arity.
+//
+//template<typename Callable>
+//void connection::remove_function(const char *name, Callable /*callable*/) {
+//	remove_function(name, NArgs);
+//}
+//
+//template<typename Function>
+//void connection::remove_function(const char *name) {
+//	constexpr int NArgs = callable_traits<std::decay_t<Callable>>::cargs;
+//	remove_function<Function>(name);
+//}
+
 } // namespace sqxx
 
 #endif // SQXX_CONNECTION_CREATE_FUNCTION_IMPL_HPP_INCLUDED

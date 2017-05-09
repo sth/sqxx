@@ -714,5 +714,26 @@ void connection::set_collation_handler() {
 		callbacks->collation_data.reset();
 }
 
+void connection::remove_function(const char *name, int argc) {
+	int rv = sqlite3_create_function_v2(handle, name, argc, SQLITE_UTF8, nullptr,
+			nullptr, nullptr, nullptr, nullptr);
+	if (rv != SQLITE_OK) {
+		throw static_error(rv);
+	}
+}
+
+void connection::remove_function(const std::string &name, int argc) {
+	remove_function(name.c_str(), argc);
+}
+
+void connection::remove_aggregate(const char *name, int argc) {
+	// Aggregates are really just functions for sqlite
+	remove_function(name, argc);
+}
+
+void connection::remove_aggregate(const std::string &name, int argc) {
+	remove_aggregate(name.c_str(), argc);
+}
+
 } // namespace sqxx
 

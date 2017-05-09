@@ -453,6 +453,9 @@ public:
 	template<typename Callable>
 	void create_function_vararg(const char *name, Callable f);
 
+	void remove_function(const char *name, int argc);
+	void remove_function(const std::string &name, int argc);
+
 public:
 	/**
 	 * Register an aggregation function.
@@ -516,6 +519,9 @@ public:
 
 	template<typename State, typename StepCallable>
 	void create_aggregate(const std::string &name, State &&zero, StepCallable step_fun);
+
+	void remove_aggregate(const char *name, int argc);
+	void remove_aggregate(const std::string &name, int argc);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }
