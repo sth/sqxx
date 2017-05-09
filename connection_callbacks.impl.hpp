@@ -8,8 +8,7 @@
 
 // Function types with C calling convention for callbacks
 // https://stackoverflow.com/a/5590050/
-extern "C" typedef void sqxx_function_call_type(sqlite3_context*, int, sqlite3_value**);
-extern "C" typedef void sqxx_function_destroy_type(void*);
+extern "C" typedef void sqxx_appdata_destroy_type(void*);
 
 extern "C" void* sqlite3_user_data(sqlite3_context*);
 
@@ -51,10 +50,10 @@ R apply_value_array(Fun &&f, sqlite3_value **argv, BaseArgs&&... baseargs) {
 
 
 template<typename T>
-sqxx_function_destroy_type function_destroy_object;
+sqxx_appdata_destroy_type appdata_destroy_object;
 
 template<typename T>
-void function_destroy_object(void *data) {
+void appdata_destroy_object(void *data) {
 	delete reinterpret_cast<T*>(data);
 }
 

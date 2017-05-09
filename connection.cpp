@@ -37,7 +37,7 @@ public:
 };
 
 void create_function_register(sqlite3 *handle, const char *name, int argc,
-		void *data, sqxx_function_call_type *fun, sqxx_function_destroy_type *destroy) {
+		void *data, sqxx_function_call_type *fun, sqxx_appdata_destroy_type *destroy) {
 	int rv = sqlite3_create_function_v2(handle, name, argc, SQLITE_UTF8, data,
 			fun, nullptr, nullptr, destroy);
 	if (rv != SQLITE_OK) {
@@ -48,7 +48,7 @@ void create_function_register(sqlite3 *handle, const char *name, int argc,
 
 void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, void *adat,
 		sqxx_aggregate_step_type *stepfun, sqxx_aggregate_final_type *finalfun,
-		sqxx_aggregate_destroy_type *destroy) {
+		sqxx_appdata_destroy_type *destroy) {
 	int rv = sqlite3_create_function_v2(handle, name, nargs, SQLITE_UTF8, adat,
 			nullptr, stepfun, finalfun, destroy);
 	if (rv != SQLITE_OK) {
@@ -58,7 +58,7 @@ void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, voi
 }
 
 void create_collation_register(sqlite3 *handle, const char *name, void *data,
-		sqxx_collation_compare_type *fun, sqxx_collation_destroy_type *destroy) {
+		sqxx_collation_compare_type *fun, sqxx_appdata_destroy_type *destroy) {
 	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, fun, destroy);
 	if (rv != SQLITE_OK) {
 		if (destroy)

@@ -4,9 +4,10 @@
 #if !defined(SQXX_CONNECTION_CREATE_AGGREGATE_IMPL_HPP_INCLUDED)
 #define SQXX_CONNECTION_CREATE_AGGREGATE_IMPL_HPP_INCLUDED
 
+// Function types with C calling convention for callbacks
+// https://stackoverflow.com/a/5590050/
 extern "C" typedef void sqxx_aggregate_step_type(sqlite3_context*, int, sqlite3_value**);
 extern "C" typedef void sqxx_aggregate_final_type(sqlite3_context*);
-extern "C" typedef void sqxx_aggregate_destroy_type(void*);
 
 namespace sqxx {
 namespace detail {
@@ -144,7 +145,7 @@ void aggregate_call_final(sqlite3_context *handle) {
 
 void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, void *data,
 		sqxx_aggregate_step_type *stepfun, sqxx_aggregate_final_type *finalfun,
-		sqxx_aggregate_destroy_type *destroy);
+		sqxx_appdata_destroy_type *destroy);
 
 } // namespace detail
 
@@ -166,7 +167,7 @@ void connection::create_aggregate(const char *name,
 	detail::create_aggregate_register(handle, name, traits::argc-1, reinterpret_cast<void*>(adat),
 			detail::aggregate_call_step<StateD, StepD, FinalD>,
 			detail::aggregate_call_final<StateD, StepD, FinalD>,
-			detail::function_destroy_object<data_t>);
+			detail::appdata_destroy_object<data_t>);
 }
 
 template<typename State, typename StepCallable, typename FinalCallable>

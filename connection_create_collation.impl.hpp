@@ -1,6 +1,10 @@
 
+#if !defined(SQXX_CONNECTION_CREATE_COLLATION_IMPL_HPP_INCLUDED)
+#define SQXX_CONNECTION_CREATE_COLLATION_IMPL_HPP_INCLUDED
+
+// Function types with C calling convention for callbacks
+// https://stackoverflow.com/a/5590050/
 extern "C" typedef int sqxx_collation_compare_type(void*, int, const void*, int, const void*);
-extern "C" typedef void sqxx_collation_destroy_type(void*);
 
 namespace sqxx {
 namespace detail {
@@ -43,7 +47,7 @@ int collation_compare_staticfptr(void *data, int llen, const void *lstr, int rle
 }
 
 void create_collation_register(sqlite3 *handle, const char *name, void *data,
-		sqxx_collation_compare_type *fun, sqxx_collation_destroy_type *destroy);
+		sqxx_collation_compare_type *fun, sqxx_appdata_destroy_type *destroy);
 
 } // namespace detail
 
@@ -68,7 +72,7 @@ connection::create_collation(const char *name, Callable callable) {
 	// gets removed.
 	CallableType *cptr = new CallableType(callable);
 	detail::create_collation_register(handle, name, reinterpret_cast<void*>(cptr),
-			detail::collation_compare_ptr<CallableType>, detail::function_destroy_object<CallableType>);
+			detail::collation_compare_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
 
 
@@ -83,4 +87,6 @@ connection::create_collation(const char *name) {
 }
 
 } // namespace sqxx
+
+#endif // SQXX_CONNECTION_CREATE_COLLATION_IMPL_HPP_INCLUDED
 

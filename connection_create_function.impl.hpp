@@ -4,8 +4,9 @@
 #if !defined(SQXX_CONNECTION_CREATE_FUNCTION_IMPL_HPP_INCLUDED)
 #define SQXX_CONNECTION_CREATE_FUNCTION_IMPL_HPP_INCLUDED
 
+// Function types with C calling convention for callbacks
+// https://stackoverflow.com/a/5590050/
 extern "C" typedef void sqxx_function_call_type(sqlite3_context*, int, sqlite3_value**);
-extern "C" typedef void sqxx_function_destroy_type(void*);
 
 namespace sqxx {
 namespace detail {
@@ -77,7 +78,7 @@ void function_call_staticfptr(sqlite3_context *handle, int argc, sqlite3_value**
 }
 
 void create_function_register(sqlite3 *handle, const char *name, int narg, void *data,
-		sqxx_function_call_type *fun, sqxx_function_destroy_type *destroy);
+		sqxx_function_call_type *fun, sqxx_appdata_destroy_type *destroy);
 
 } // namespace detail
 
@@ -108,7 +109,7 @@ connection::create_function(const char *name, Callable callable) {
 	// gets removed.
 	CallableType *cptr = new CallableType(callable);
 	detail::create_function_register(handle, name, traits::argc,
-			reinterpret_cast<void*>(cptr), detail::function_call_ptr<CallableType>, detail::function_destroy_object<CallableType>);
+			reinterpret_cast<void*>(cptr), detail::function_call_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
 
 
