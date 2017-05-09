@@ -95,14 +95,14 @@ create_function_dispatch(sqlite3 *handle, const char *name, Function fun) {
 
 template<typename Callable>
 std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-create_function_dispatch(sqlite3 *handle, const char *name, Callable callable) {
+create_function_dispatch(sqlite3 *handle, const char *name, Callable &&callable) {
 	typedef std::decay_t<Callable> CallableType;
 	typedef callable_traits<CallableType> traits;
 
 	// We store a copy of the callable as sqlite user data.
 	// We register a "destructor" that deletes this copy when the function
 	// gets removed.
-	CallableType *cptr = new CallableType(callable);
+	CallableType *cptr = new CallableType(std::forward<Callable>(callable));
 	detail::create_function_register(handle, name, traits::argc,
 			reinterpret_cast<void*>(cptr), detail::function_call_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
@@ -111,7 +111,7 @@ create_function_dispatch(sqlite3 *handle, const char *name, Callable callable) {
 
 
 template<typename Callable>
-void connection::create_function(const char *name, Callable callable) {
+void connection::create_function(const char *name, Callable &&callable) {
 	detail::create_function_dispatch<Callable>(handle, name, std::forward<Callable>(callable));
 }
 
@@ -139,7 +139,7 @@ void connection::create_function(const std::string &name) {
 // just remove `some_fun` if it's registered, but any "foo" function with the same arity.
 //
 //template<typename Callable>
-//void connection::remove_function(const char *name, Callable /*callable*/) {
+//void connection::remove_function(const char *name, Callable &&/*callable*/) {
 //	remove_function(name, NArgs);
 //}
 //

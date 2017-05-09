@@ -11,9 +11,9 @@
 namespace sqxx {
 
 template<typename Callable>
-void connection::create_collation_stdstr(const char *name, Callable coll) {
-	collation_function_stdstr_t stdfun(coll);
-	create_collation_stdstr(name, stdfun);
+void connection::create_collation_stdstr(const char *name, Callable &&coll) {
+	collation_function_stdstr_t stdfun(std::forward<Callable>(coll));
+	create_collation_stdstr(name, std::move(stdfun));
 }
 
 } // namespace sqxx

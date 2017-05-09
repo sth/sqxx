@@ -51,7 +51,7 @@ void create_collation_register(sqlite3 *handle, const char *name, void *data,
 
 template<typename Function>
 std::enable_if_t<detail::decays_to_function_v<Function>, void>
-create_collation_dispatch(sqlite3 *handle, const char *name, Function fun) {
+create_collation_dispatch(sqlite3 *handle, const char *name, Function &&fun) {
 	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
 
 	// We store the function pointer as sqlite user data.
@@ -63,12 +63,12 @@ create_collation_dispatch(sqlite3 *handle, const char *name, Function fun) {
 
 template<typename Callable>
 std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-create_collation_dispatch(sqlite3 *handle, const char *name, Callable callable) {
+create_collation_dispatch(sqlite3 *handle, const char *name, Callable &&callable) {
 	typedef std::decay_t<Callable> CallableType;
 	// We store a copy of the callable as sqlite user data.
 	// We register a "destructor" that deletes this copy when the function
 	// gets removed.
-	CallableType *cptr = new CallableType(callable);
+	CallableType *cptr = new CallableType(std::forward<Callable>(callable));
 	detail::create_collation_register(handle, name, reinterpret_cast<void*>(cptr),
 			detail::collation_compare_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
@@ -77,12 +77,12 @@ create_collation_dispatch(sqlite3 *handle, const char *name, Callable callable) 
 
 
 template<typename Callable>
-void connection::create_collation(const char *name, Callable callable) {
+void connection::create_collation(const char *name, Callable &&callable) {
 	detail::create_collation_dispatch<Callable>(handle, name, std::forward<Callable>(callable));
 }
 
 template<typename Callable>
-void connection::create_collation(const std::string &name, Callable callable) {
+void connection::create_collation(const std::string &name, Callable &&callable) {
 	create_collation<Callable>(name.c_str(), std::forward<Callable>(callable));
 }
 

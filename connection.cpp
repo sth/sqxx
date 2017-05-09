@@ -58,8 +58,8 @@ void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, voi
 }
 
 void create_collation_register(sqlite3 *handle, const char *name, void *data,
-		sqxx_collation_compare_type *fun, sqxx_appdata_destroy_type *destroy) {
-	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, fun, destroy);
+		sqxx_collation_compare_type *comparefun, sqxx_appdata_destroy_type *destroy) {
+	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8, data, comparefun, destroy);
 	if (rv != SQLITE_OK) {
 		if (destroy)
 			destroy(data);

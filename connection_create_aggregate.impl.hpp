@@ -14,11 +14,11 @@ namespace detail {
 
 // Data associated with an aggregate
 
-template<typename State>
+template<typename StateD>
 struct aggregate_invocation_data {
 	bool initialized;
-	State state;
-	aggregate_invocation_data(const State &zero) : initialized(true), state(zero) {
+	StateD state;
+	aggregate_invocation_data(const StateD &zero) : initialized(true), state(zero) {
 	}
 };
 
@@ -152,8 +152,8 @@ void create_aggregate_register(sqlite3 *handle, const char *name, int nargs, voi
 template<typename State, typename StepCallable, typename FinalCallable>
 void connection::create_aggregate(const char *name,
 		State &&zero,
-		StepCallable stepfun,
-		FinalCallable finalfun) {
+		StepCallable &&stepfun,
+		FinalCallable &&finalfun) {
 	typedef std::decay_t<State> StateD;
 	typedef std::decay_t<StepCallable> StepD;
 	typedef std::decay_t<FinalCallable> FinalD;
@@ -171,21 +171,22 @@ void connection::create_aggregate(const char *name,
 }
 
 template<typename State, typename StepCallable, typename FinalCallable>
-void connection::create_aggregate(const std::string &name, State &&zero, StepCallable step_fun,
-		FinalCallable final_fun) {
+void connection::create_aggregate(const std::string &name, State &&zero,
+		StepCallable &&step_fun, FinalCallable &&final_fun) {
 	create_aggregate(name.c_str(), std::forward<State>(zero), std::forward<StepCallable>(step_fun),
 			std::forward<FinalCallable>(final_fun));
 }
 
 template<typename State, typename StepCallable>
-void connection::create_aggregate(const char *name, State &&zero, StepCallable step_fun) {
-	create_aggregate<State, StepCallable>(name, std::forward<State>(zero), step_fun,
+void connection::create_aggregate(const char *name, State &&zero, StepCallable &&step_fun) {
+	create_aggregate<State, StepCallable>(name, std::forward<State>(zero),
+			std::forward<StepCallable>(step_fun),
 			[](const State &state) -> State { return state; }
 		);
 }
 
 template<typename State, typename StepCallable>
-void connection::create_aggregate(const std::string &name, State &&zero, StepCallable step_fun) {
+void connection::create_aggregate(const std::string &name, State &&zero, StepCallable &&step_fun) {
 	create_aggregate(name.c_str(), std::forward<State>(zero), std::forward<StepCallable>(step_fun));
 }
 

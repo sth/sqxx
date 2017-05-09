@@ -187,10 +187,10 @@ public:
 	 * Wraps [`sqlite3_create_collation_v2()`](http://www.sqlite.org/c3ref/create_collation.html)
 	 */
 	template<typename Callable>
-	void create_collation(const char *name, Callable fun);
+	void create_collation(const char *name, Callable &&fun);
 
 	template<typename Callable>
-	void create_collation(const std::string &name, Callable fun);
+	void create_collation(const std::string &name, Callable &&fun);
 
 	template<typename Function, Function *Fun>
 	void create_collation(const char *name);
@@ -203,7 +203,7 @@ public:
 	void create_collation_stdstr(const char *name, const collation_function_stdstr_t &coll);
 
 	template<typename Callable>
-	void create_collation_stdstr(const char *name, Callable coll);
+	void create_collation_stdstr(const char *name, Callable &&coll);
 
 	void remove_collation(const char *name);
 	void remove_collation(const std::string &name);
@@ -416,10 +416,10 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename Callable>
-	void create_function(const char *name, Callable fun);
+	void create_function(const char *name, Callable &&fun);
 
 	template<typename Callable>
-	void create_function(const std::string &name, Callable fun);
+	void create_function(const std::string &name, Callable &&fun);
 
 	/**
 	 * Create or redefine a SQL function.
@@ -451,7 +451,7 @@ public:
 	 * called with a single parameter, a std::vector<sqxx::value>.
 	 */
 	template<typename Callable>
-	void create_function_vararg(const char *name, Callable f);
+	void create_function_vararg(const char *name, Callable &&f);
 
 	void remove_function(const char *name, int argc);
 	void remove_function(const std::string &name, int argc);
@@ -502,12 +502,12 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename State, typename StepCallable, typename FinalCallable>
-	void create_aggregate(const char *name, State &&zero, StepCallable step_fun,
-			FinalCallable final_fun);
+	void create_aggregate(const char *name, State &&zero, StepCallable &&step_fun,
+			FinalCallable &&final_fun);
 
 	template<typename State, typename StepCallable, typename FinalCallable>
-	void create_aggregate(const std::string &name, State &&zero, StepCallable step_fun,
-			FinalCallable final_fun);
+	void create_aggregate(const std::string &name, State &&zero, StepCallable &&step_fun,
+			FinalCallable &&final_fun);
 
 	/**
 	 * Register an aggregation function without a special `final_fun` function.
@@ -515,10 +515,10 @@ public:
 	 * The accumulated state is returned directly after the final `step_fun` call.
 	 */
 	template<typename State, typename StepCallable>
-	void create_aggregate(const char *name, State &&zero, StepCallable step_fun);
+	void create_aggregate(const char *name, State &&zero, StepCallable &&step_fun);
 
 	template<typename State, typename StepCallable>
-	void create_aggregate(const std::string &name, State &&zero, StepCallable step_fun);
+	void create_aggregate(const std::string &name, State &&zero, StepCallable &&step_fun);
 
 	void remove_aggregate(const char *name, int argc);
 	void remove_aggregate(const std::string &name, int argc);
