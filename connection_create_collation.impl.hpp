@@ -49,11 +49,9 @@ int collation_compare_staticfptr(void *data, int llen, const void *lstr, int rle
 void create_collation_register(sqlite3 *handle, const char *name, void *data,
 		sqxx_collation_compare_type *fun, sqxx_appdata_destroy_type *destroy);
 
-} // namespace detail
-
 template<typename Function>
 std::enable_if_t<detail::decays_to_function_v<Function>, void>
-connection::create_collation(const char *name, Function fun) {
+create_collation_dispatch(sqlite3 *handle, const char *name, Function fun) {
 	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
 
 	// We store the function pointer as sqlite user data.
@@ -65,7 +63,7 @@ connection::create_collation(const char *name, Function fun) {
 
 template<typename Callable>
 std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-connection::create_collation(const char *name, Callable callable) {
+create_collation_dispatch(sqlite3 *handle, const char *name, Callable callable) {
 	typedef std::decay_t<Callable> CallableType;
 	// We store a copy of the callable as sqlite user data.
 	// We register a "destructor" that deletes this copy when the function
@@ -75,15 +73,31 @@ connection::create_collation(const char *name, Callable callable) {
 			detail::collation_compare_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
 
+} // namespace detail
+
+
+template<typename Callable>
+void connection::create_collation(const char *name, Callable callable) {
+	detail::create_collation_dispatch<Callable>(handle, name, std::forward<Callable>(callable));
+}
+
+template<typename Callable>
+void connection::create_collation(const std::string &name, Callable callable) {
+	create_collation<Callable>(name.c_str(), std::forward<Callable>(callable));
+}
 
 // A function specified as a template parameter
 template<typename Function, Function *Fun>
-std::enable_if_t<std::is_function<Function>::value, void>
-connection::create_collation(const char *name) {
+void connection::create_collation(const char *name) {
 	// Function type is known statically and we don't need to store any
 	// special sqlite user data.
 	detail::create_collation_register(handle, name, nullptr,
 			detail::collation_compare_staticfptr<Function, Fun>, nullptr);
+}
+
+template<typename Function, Function *Fun>
+void connection::create_collation(const std::string &name) {
+	create_collation<Function, Fun>(name.c_str());
 }
 
 } // namespace sqxx

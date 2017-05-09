@@ -80,14 +80,9 @@ void function_call_staticfptr(sqlite3_context *handle, int argc, sqlite3_value**
 void create_function_register(sqlite3 *handle, const char *name, int narg, void *data,
 		sqxx_function_call_type *fun, sqxx_appdata_destroy_type *destroy);
 
-} // namespace detail
-
-
-
-// A function pointer passed as a function argument
 template<typename Function>
 std::enable_if_t<detail::decays_to_function_v<Function>, void>
-connection::create_function(const char *name, Function fun) {
+create_function_dispatch(sqlite3 *handle, const char *name, Function fun) {
 	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
 	typedef callable_traits<FunctionType> traits;
 
@@ -100,7 +95,7 @@ connection::create_function(const char *name, Function fun) {
 
 template<typename Callable>
 std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-connection::create_function(const char *name, Callable callable) {
+create_function_dispatch(sqlite3 *handle, const char *name, Callable callable) {
 	typedef std::decay_t<Callable> CallableType;
 	typedef callable_traits<CallableType> traits;
 
@@ -112,11 +107,17 @@ connection::create_function(const char *name, Callable callable) {
 			reinterpret_cast<void*>(cptr), detail::function_call_ptr<CallableType>, detail::appdata_destroy_object<CallableType>);
 }
 
+} // namespace detail
+
+
+template<typename Callable>
+void connection::create_function(const char *name, Callable callable) {
+	detail::create_function_dispatch<Callable>(handle, name, std::forward<Callable>(callable));
+}
 
 // A function specified as a template parameter
 template<typename Function, Function *Fun>
-std::enable_if_t<std::is_function<Function>::value, void>
-connection::create_function(const char *name) {
+void connection::create_function(const char *name) {
 	typedef std::remove_pointer_t<std::decay_t<Function>> FunctionType;
 	typedef callable_traits<FunctionType> traits;
 
@@ -124,6 +125,11 @@ connection::create_function(const char *name) {
 	// special sqlite user data.
 	detail::create_function_register(handle, name, traits::argc,
 			nullptr, detail::function_call_staticfptr<Function, Fun>, nullptr);
+}
+
+template<typename Function, Function *Fun>
+void connection::create_function(const std::string &name) {
+	create_function<Function, Fun>(name.c_str());
 }
 
 } // namespace sqxx

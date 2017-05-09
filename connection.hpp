@@ -186,24 +186,17 @@ public:
 	 *
 	 * Wraps [`sqlite3_create_collation_v2()`](http://www.sqlite.org/c3ref/create_collation.html)
 	 */
-	template<typename Function>
-	std::enable_if_t<detail::decays_to_function_v<Function>, void>
-	create_collation(const char *name, Function fun);
-
 	template<typename Callable>
-	std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-	create_collation(const char *name, Callable fun);
+	void create_collation(const char *name, Callable fun);
 
 	template<typename Callable>
 	void create_collation(const std::string &name, Callable fun);
 
 	template<typename Function, Function *Fun>
-	std::enable_if_t<std::is_function<Function>::value, void>
-	create_collation(const char *name);
+	void create_collation(const char *name);
 
 	template<typename Function, Function *Fun>
-	std::enable_if_t<std::is_function<Function>::value, void>
-	create_collation(const std::string &name);
+	void create_collation(const std::string &name);
 
 
 	typedef std::function<int (const std::string &, const std::string &)> collation_function_stdstr_t;
@@ -422,13 +415,8 @@ public:
 	 *
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
-	template<typename Function>
-	std::enable_if_t<detail::decays_to_function_v<Function>, void>
-	create_function(const char *name, Function fun);
-
 	template<typename Callable>
-	std::enable_if_t<!detail::decays_to_function_v<Callable>, void>
-	create_function(const char *name, Callable fun);
+	void create_function(const char *name, Callable fun);
 
 	template<typename Callable>
 	void create_function(const std::string &name, Callable fun);
@@ -453,12 +441,10 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename Function, Function *Fun>
-	std::enable_if_t<std::is_function<Function>::value, void>
-	create_function(const char *name);
+	void create_function(const char *name);
 
 	template<typename Function, Function *Fun>
-	std::enable_if_t<std::is_function<Function>::value, void>
-	create_function(const std::string &name);
+	void create_function(const std::string &name);
 
 	/** TODO:
 	 * Define a SQL function with variable number of arguments. The Callable will be
