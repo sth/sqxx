@@ -10,17 +10,6 @@
 
 namespace sqxx {
 
-//template<typename Callable>
-//void connection::create_function(const std::string &name, Callable fun) {
-//	create_function<Callable>(name.c_str(), std::forward<Callable>(fun));
-//}
-//
-//template<typename Function, Function *Fun>
-//std::enable_if_t<std::is_function<Function>::value, void>
-//connection::create_function(const std::string &name) {
-//	create_function<Function, Fun>(name.c_str());
-//}
-
 template<typename Callable>
 void connection::create_collation(const char *name, Callable coll) {
 	collation_function_t stdfun(coll);

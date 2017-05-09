@@ -498,16 +498,16 @@ public:
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)
 	 */
 	template<typename State, typename StepCallable, typename FinalCallable>
-	void create_aggregate(const char *name, State &&zero, StepCallable step_fun, FinalCallable final_fun);
+	void create_aggregate(const char *name, State &&zero, StepCallable step_fun,
+			FinalCallable final_fun);
 
 	/**
-	 * Register a simple accumulator/reduce function as an aggregate
+	 * Register an aggregation function without a special `final_fun` function.
+	 *
+	 * The accumulated state is returned directly after the final `step_fun` call.
 	 */
-	template<typename Result, typename... Args>
-	void create_aggregate_reduce(const char *name, Result zero, const std::function<Result (Result, Args...)> &aggregator);
-
-	template<typename Result, typename Callable>
-	void create_aggregate_reduce(const char *name, Result zero, Callable aggregator);
+	template<typename State, typename StepCallable>
+	void create_aggregate(const char *name, State &&zero, StepCallable step_fun);
 
 	/** Raw access to the underlying `sqlite3*` handle */
 	sqlite3* raw() { return handle; }

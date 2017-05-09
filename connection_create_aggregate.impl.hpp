@@ -165,6 +165,13 @@ void connection::create_aggregate(const char *name,
 			detail::function_destroy_object<data_t>);
 }
 
+template<typename State, typename StepCallable>
+void connection::create_aggregate(const char *name, State &&zero, StepCallable step_fun) {
+	create_aggregate<State, StepCallable>(name, std::forward<State>(zero), step_fun,
+			[](const State &state) -> State { return state; }
+		);
+}
+
 } // namespace sqxx
 
 #endif // SQXX_CONNECTION_CREATE_AGGREGATE_IMPL_HPP_INCLUDED

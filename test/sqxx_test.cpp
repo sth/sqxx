@@ -3,7 +3,6 @@
 
 #include "sqxx.hpp"
 #include "column.hpp"
-#include "function.hpp"
 
 #include "setup.hpp"
 
@@ -317,11 +316,11 @@ BOOST_AUTO_TEST_CASE(create_aggregate) {
 	auto st3 = ctx.conn.run("select aggr(v, v+1) from items where id <= 2");
 	BOOST_CHECK_EQUAL(st3.val<int>(0), 11*12 + 22*23 + 5);
 
-	// Simple "reduce style" aggregate
+	// Simple aggregate with default `final` function
 	called = 0;
-	ctx.conn.create_aggregate_reduce("rsum", 0, [&](int acc, int i) -> int {
+	ctx.conn.create_aggregate("rsum", 0, [&](int &acc, int i) {
 		called++;
-		return acc + i;
+		acc += i;
 	});
 	auto st4 = ctx.conn.run("select rsum(v) from items where id <= 2");
 	BOOST_CHECK_EQUAL(called, 2);
