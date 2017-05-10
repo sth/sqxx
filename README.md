@@ -4,18 +4,28 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
 
 ## Notable features
 
-- Only minimal overhead over calling the C API functions directly
-- Contains easy to use functions that get common tasks done quickly, even without experience
-  with sqlite3
-- Contains methods corresponding directly to the C API functions, so if you are familiar
-  with the C API, that knowledge should translate directly.
-- Contains support for advanced features like registering callbacks, collation functions
-  or custom SQL functions, fully in C++. For example a lambda functions can be registered
-  as a custom SQL function and then be called in SQL queries.
+- Modern C++ interface (range-base `for` iteration over sql results, registering
+  C++ lambdas as SQL functions, ...)
+- As far as possible no overhead over calling the C API functions directly
+- Support for exotic sqlite features (register C++ lamdas as sqlite hook functions,
+  query runtime status information, creating wal checkpoints, ...)
+- Easy access and interoperability with the underlying sqlite C-Api in case the
+  provided C++ abstraction isn't enough for some special use case (though
+  intention is to make this unnecessary for all but the most exotic requirements)
+- Easy to use convenience functions that get common tasks done quickly, even
+  without experience with sqlite3
+- Methods corresponding directly to the C API functions, so if you are familiar
+  with the C API, that knowledge should translate directly
+- Support for advanced features like registering callbacks, collation functions
+  or custom SQL functions, fully in C++. For example a lambda functions can be
+  registered as a custom SQL function and then be called in SQL queries.
+
+(TODO: Add section explaining detailed performace characteristics;
+Add section explaining differences to C Api and missing parts (intentional or still to do))
 
 ### General implementation features
 
-- Only minimal overhead over calling the C API functions directly
+- Only minimal or no overhead over calling the C API functions directly
 - No pollution of the global namespace with sqlite symbols.
 - Register C++ functions/lambdas/... as SQL functions or SQL aggregates
 - Register C++ functions/lambdas/... as sqlite3 callbacks/hooks
