@@ -6,6 +6,7 @@
 
 #include "datatypes.hpp"
 #include "connection.hpp"
+#include <map>
 
 // struct from <sqlite3.h>
 struct sqlite3_stmt;
@@ -238,6 +239,28 @@ public:
 	 */
 	int col_count() const;
 
+private:
+	// This is just a cache and doesn't change the object state.
+	// It's ok to create/update the cache on const objects, so we
+	// make it `mutable`.
+	mutable bool col_index_table_built = false;
+	mutable std::map<std::string, int> col_index_table;
+
+public:
+	/**
+	 * Return the index of a column with name `name`.
+	 *
+	 * If there are multiple columns with the same name, the index
+	 * of one of them is returned.
+	 *
+	 * The first call to this function builds a lookup table that
+	 * is used to translate names to indexes.
+	 *
+	 * Uses a lookup table built from [`sqlite3_column_name()`](http://www.sqlite.org/c3ref/column_name.html) calls
+	 */
+	int col_index(const char *name) const;
+	int col_index(const std::string &name) const;
+
 	/**
 	 * Get a column object.
 	 *
@@ -258,7 +281,9 @@ public:
 	// * The same performance can also be achieved without `column` objects by using
 	// * numeric column indexes instead of names.
 	// */
-	column col(int idx);
+	column col(int idx) const;
+	column col(const char *name) const;
+	column col(const std::string &name) const;
 
 	/**
 	 * Access the value of a column in the current result row.
@@ -280,6 +305,12 @@ public:
 	 */
 	template<typename T>
 	if_sqxx_db_type<T, T> val(int idx) const;
+
+	template<typename T>
+	if_sqxx_db_type<T, T> val(const char *name) const;
+
+	template<typename T>
+	if_sqxx_db_type<T, T> val(const std::string &name) const;
 
 	// Statement execution
 	/**

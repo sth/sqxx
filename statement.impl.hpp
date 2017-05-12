@@ -83,6 +83,16 @@ std::string statement::val<std::string>(int idx) const;
 template<>
 blob statement::val<blob>(int idx) const;
 
+template<typename T>
+if_sqxx_db_type<T, T> statement::val(const char *name) const {
+	return val<T>(col_index(name));
+}
+
+template<typename T>
+if_sqxx_db_type<T, T> statement::val(const std::string &name) const {
+	return val<T>(name).c_str();
+}
+
 } // namespace sqxx
 
 #endif // SQXX_STATEMENT_IMPL_HPP_INCLUDED

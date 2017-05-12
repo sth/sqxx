@@ -139,8 +139,30 @@ int statement::col_count() const {
 	return sqlite3_column_count(handle);
 }
 
-column statement::col(int idx) {
+int statement::col_index(const char *name) const {
+	if (!col_index_table_built) {
+		for (int i = 0, n = col_count(); i < n; ++i) {
+			col_index_table[col(i).name()] = i;
+		}
+		col_index_table_built = true;
+	}
+	return col_index_table[name];
+}
+
+int statement::col_index(const std::string &name) const {
+	return col_index(name.c_str());
+}
+
+column statement::col(int idx) const {
 	return column(*this, idx);
+}
+
+column statement::col(const char *name) const {
+	return col(col_index(name));
+}
+
+column statement::col(const std::string &name) const {
+	return col(name.c_str());
 }
 
 template<>
@@ -218,6 +240,9 @@ void statement::reset() {
 		// last step() gave error. Does this mean reset() is also invalid?
 		// TODO
 	}
+
+	col_index_table.clear();
+	col_index_table_built = false;
 }
 
 void statement::clear_bindings() {
