@@ -216,23 +216,41 @@ public:
 	statement prepare(const char *sql);
 	statement prepare(const std::string &sql);
 
-	/** Execute sql
+	/** Runs a sql query.
 	 *
 	 * Returns a `statement` in case you are interested
-	 * in the results returned by the query.
+	 * in the results returned by the query. If you are not interested
+	 * in it, just ignore the return value.
 	 *
-	 * If you are not interested in it, just ignore the return value.
+	 * This runs a single Sql query, not multiple ones.
+	 *
+	 * (TODO: Check end throw if multiple statements are passed)
 	 */
 	statement run(const char *sql);
 	statement run(const std::string &sql);
 
+	/** Execute Sql.
+	 *
+	 * Runs one or multiple Sql statements. Ignores and returned rows.
+	 * If you are interested in the results of your queries, use `run()`
+	 * instead.
+	 *
+	 * Wraps [`sqlite3_exec()`](http://www.sqlite.org/c3ref/exec.html)
+	 */
+	void exec(const char *sql);
+	void exec(const std::string &sql);
+
 	/**
-	 * Only for api compatibility, better use run() and iterator interface
+	 * Adds a callback to exec that is called with query result rows.
+	 * Only provided for compatibility with the C Api, better use `run()`
+	 * and its returned `statement` to access selected rows in a comfortable
+	 * way.
 	 *
 	 * Wraps [`sqlite3_exec()`](http://www.sqlite.org/c3ref/exec.html)
 	 */
 	typedef std::function<bool (int, char**, char**)> exec_handler_t;
 	void exec(const char *sql, const exec_handler_t &fun);
+	void exec(const std::string &sql, const exec_handler_t &fun);
 
 	/*
 	template<typename T>

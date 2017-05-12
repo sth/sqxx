@@ -268,25 +268,42 @@ int sqxx_call_exec_handler(void *data, int colcount, char **values, char **colum
 	}
 }
 
-void connection::exec(const char *sql, const exec_handler_t &fun) {
+void connection::exec(const char *sql) {
 	char *errmsg = nullptr;
-	int rv;
-	if (fun) {
-		exec_context ctx(fun);
-		rv = sqlite3_exec(handle, sql, sqxx_call_exec_handler, &ctx, &errmsg);
-		if (ctx.ex) {
-			std::rethrow_exception(ctx.ex);
-		}
+	int rv = sqlite3_exec(handle, sql, nullptr, nullptr, &errmsg);
+	if (rv != SQLITE_OK) {
+		auto ex = error(rv, errmsg);
+		sqlite3_free(errmsg);
+		throw ex;
 	}
-	else {
-		rv = sqlite3_exec(handle, sql, nullptr, nullptr, &errmsg);
+}
+
+void connection::exec(const std::string &sql) {
+	exec(sql.c_str());
+}
+
+void connection::exec(const char *sql, const exec_handler_t &fun) {
+	if (!fun) {
+		// empty callback function
+		exec(sql);
+		return;
 	}
 
-	if (rv != SQLITE_OK) {
-		//TODO: Use errmsg
-		sqlite3_free(errmsg);
-		throw static_error(rv);
+	exec_context ctx(fun);
+	char *errmsg = nullptr;
+	int rv = sqlite3_exec(handle, sql, sqxx_call_exec_handler, &ctx, &errmsg);
+	if (ctx.ex) {
+		std::rethrow_exception(ctx.ex);
 	}
+	if (rv != SQLITE_OK) {
+		auto ex = error(rv, errmsg);
+		sqlite3_free(errmsg);
+		throw ex;
+	}
+}
+
+void connection::exec(const std::string &sql, const exec_handler_t &fun) {
+	exec(sql.c_str(), fun);
 }
 
 statement connection::run(const char *sql) {
