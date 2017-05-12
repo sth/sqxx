@@ -242,7 +242,7 @@ public:
 	 * Get a column object.
 	 *
 	 * Usually a column object is not necessary, result data can be accessed
-	 * directly using `statement::val<type>("columnname")`.
+	 * directly using `statement::val<type>(columnindex)`.
 	 *
 	 * A `column` object can be useful to access additional properties of a result
 	 * column, like its declared type and name.
