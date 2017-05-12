@@ -139,17 +139,17 @@ public:
 	 */
 	counter status(int op, bool reset=false);
 	counter status_lookaside_used(bool reset=false);
-	counter status_cache_used(bool reset=false);
-	counter status_schema_used(bool reset=false);
-	counter status_stmt_used(bool reset=false);
 	counter status_lookaside_hit(bool reset=false);
 	counter status_lookaside_miss_size(bool reset=false);
 	counter status_lookaside_miss_full(bool reset=false);
+	counter status_cache_used(bool reset=false);
+	counter status_cache_used_shared(bool reset=false);
+	counter status_schema_used(bool reset=false);
+	counter status_stmt_used(bool reset=false);
 	counter status_cache_hit(bool reset=false);
 	counter status_cache_miss(bool reset=false);
 	counter status_cache_write(bool reset=false);
 	counter status_deferred_fks(bool reset=false);
-	counter status_cache_used_shared(bool reset=false);
 
 	/**
 	 * Wraps [`sqlite3_table_column_metadata()`](http://www.sqlite.org/c3ref/table_column_metadata.html)

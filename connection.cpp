@@ -148,18 +148,6 @@ counter connection::status_lookaside_used(bool reset) {
 	return status(SQLITE_DBSTATUS_LOOKASIDE_USED, reset);
 }
 
-counter connection::status_cache_used(bool reset) {
-	return status(SQLITE_DBSTATUS_CACHE_USED, reset);
-}
-
-counter connection::status_schema_used(bool reset) {
-	return status(SQLITE_DBSTATUS_SCHEMA_USED, reset);
-}
-
-counter connection::status_stmt_used(bool reset) {
-	return status(SQLITE_DBSTATUS_STMT_USED, reset);
-}
-
 counter connection::status_lookaside_hit(bool reset) {
 	return status(SQLITE_DBSTATUS_LOOKASIDE_HIT, reset);
 }
@@ -170,6 +158,24 @@ counter connection::status_lookaside_miss_size(bool reset) {
 
 counter connection::status_lookaside_miss_full(bool reset) {
 	return status(SQLITE_DBSTATUS_LOOKASIDE_MISS_FULL, reset);
+}
+
+counter connection::status_cache_used(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_USED, reset);
+}
+
+#if SQLITE_VERSION_NUMBER >= 3014000
+counter connection::status_cache_used_shared(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_USED_SHARED, reset);
+}
+#endif
+
+counter connection::status_schema_used(bool reset) {
+	return status(SQLITE_DBSTATUS_SCHEMA_USED, reset);
+}
+
+counter connection::status_stmt_used(bool reset) {
+	return status(SQLITE_DBSTATUS_STMT_USED, reset);
 }
 
 counter connection::status_cache_hit(bool reset) {
@@ -187,12 +193,6 @@ counter connection::status_cache_write(bool reset) {
 #if SQLITE_VERSION_NUMBER >= 3008000
 counter connection::status_deferred_fks(bool reset) {
 	return status(SQLITE_DBSTATUS_DEFERRED_FKS, reset);
-}
-#endif
-
-#if SQLITE_VERSION_NUMBER >= 3014000
-counter connection::status_cache_used_shared(bool reset) {
-	return status(SQLITE_DBSTATUS_CACHE_USED_SHARED, reset);
 }
 #endif
 
