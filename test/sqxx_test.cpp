@@ -44,16 +44,18 @@ BOOST_AUTO_TEST_CASE(column_val) {
 	//BOOST_CHECK(r.col(6).isnull());
 }
 
-BOOST_AUTO_TEST_CASE(column_typed_val) {
+/*
+BOOST_AUTO_TEST_CASE(column_named_val) {
 	tab ctx;
 	sqxx::statement st = ctx.conn.prepare("select * from types where id = 1");
 	st.run();
-	BOOST_CHECK_EQUAL(st.col(1).val<int>(), 2);
-	BOOST_CHECK_EQUAL(st.col(2).val<int64_t>(), 3000000000000L);
-	BOOST_CHECK_EQUAL(st.col(3).val<double>(), 4.5);
-	BOOST_CHECK_EQUAL(st.col(4).val<const char *>(), "abc");
-	BOOST_CHECK_EQUAL(st.col(4).val<std::string>(), "abc");
+	BOOST_CHECK_EQUAL(st.col("i").val<int>(), 2);
+	BOOST_CHECK_EQUAL(st.col("l").val<int64_t>(), 3000000000000L);
+	BOOST_CHECK_EQUAL(st.col("d").val<double>(), 4.5);
+	BOOST_CHECK_EQUAL(st.col("s").val<const char *>(), "abc");
+	BOOST_CHECK_EQUAL(st.col("s").val<std::string>(), "abc");
 }
+*/
 
 /*
 BOOST_AUTO_TEST_CASE(column_conversion) {

@@ -2,6 +2,8 @@
 project('sqxx', 'cpp',
 	default_options: ['cpp_std=c++14'])
 
+sqlite3 = dependency('sqlite3')
+
 sources = [
 		'backup.cpp',
 		'blob.cpp',
@@ -17,6 +19,13 @@ sources = [
 		'value.cpp',
 	]
 
-shared_library('sqxx', sources)
-static_library('sqxx', sources)
+sqxx_include = include_directories('.')
+
+sqxx = static_library('sqxx', sources,
+	dependencies : sqlite3)
+sqxx_so = shared_library('sqxx', sources,
+	dependencies : sqlite3)
+
+subdir('test')
+subdir('test-includes')
 
