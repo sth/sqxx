@@ -13,10 +13,10 @@ namespace sqxx {
 
 class column {
 public:
-	statement &stmt;
+	const statement &stmt;
 	const int idx;
 
-	column(statement &a_stmt, int a_idx);
+	column(const statement &a_stmt, int a_idx);
 
 	/** Wraps [`sqlite3_column_name()`](http://www.sqlite.org/c3ref/column_name.html) */
 	const char* name() const;

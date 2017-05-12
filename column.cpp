@@ -7,7 +7,7 @@
 
 namespace sqxx {
 
-column::column(statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
+column::column(const statement &a_stmt, int a_idx) : stmt(a_stmt), idx(a_idx) {
 }
 
 const char* column::name() const {
