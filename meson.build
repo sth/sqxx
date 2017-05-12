@@ -26,6 +26,7 @@ sqxx = static_library('sqxx', sources,
 sqxx_so = shared_library('sqxx', sources,
 	dependencies : sqlite3)
 
+subdir('examples')
 subdir('test')
 subdir('test-includes')
 
