@@ -226,13 +226,19 @@ public:
 	 *
 	 * (TODO: Check end throw if multiple statements are passed)
 	 */
+	statement query(const char *sql);
+	statement query(const std::string &sql);
+
+	[[deprecated("use query() instead")]]
 	statement run(const char *sql);
+
+	[[deprecated("use query() instead")]]
 	statement run(const std::string &sql);
 
 	/** Execute Sql.
 	 *
 	 * Runs one or multiple Sql statements. Ignores and returned rows.
-	 * If you are interested in the results of your queries, use `run()`
+	 * If you are interested in the results of your queries, use `query()`
 	 * instead.
 	 *
 	 * Wraps [`sqlite3_exec()`](http://www.sqlite.org/c3ref/exec.html)
@@ -242,7 +248,7 @@ public:
 
 	/**
 	 * Adds a callback to exec that is called with query result rows.
-	 * Only provided for compatibility with the C Api, better use `run()`
+	 * Only provided for compatibility with the C Api, better use `query()`
 	 * and its returned `statement` to access selected rows in a comfortable
 	 * way.
 	 *
@@ -514,7 +520,7 @@ public:
 	 * }
 	 *
 	 * conn.create_aggregate("geom", geom_state(), geom_step, geom_final);
-	 * conn.run("SELECT geom(v) FROM values");
+	 * conn.query("SELECT geom(v) FROM values");
 	 * ```
 	 *
 	 * Wraps [`sqlite3_create_function()`](http://www.sqlite.org/c3ref/create_function.html)

@@ -201,6 +201,10 @@ void statement::run() {
 	step();
 }
 
+void statement::query() {
+	run();
+}
+
 void statement::next_row() {
 	// TODO: Add check that stmt was run()
 	step();

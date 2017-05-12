@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(example_aggregate_geom) {
 
 	tab ctx;
 	ctx.conn.create_aggregate("geom", geom_state(), geom_step, geom_final);
-	ctx.conn.run("SELECT geom(v) FROM items");
+	ctx.conn.query("SELECT geom(v) FROM items");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

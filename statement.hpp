@@ -301,6 +301,10 @@ public:
 
 	/** Execute a statement */
 	void run();
+
+	/** Alias for `run()` as an analog to `connection::query()` */
+	void query();
+
 	/** Advance to next result row */
 	void next_row();
 

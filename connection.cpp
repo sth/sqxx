@@ -306,15 +306,24 @@ void connection::exec(const std::string &sql, const exec_handler_t &fun) {
 	exec(sql.c_str(), fun);
 }
 
-statement connection::run(const char *sql) {
+statement connection::query(const char *sql) {
 	statement st = prepare(sql);
 	st.run();
 	return st;
 }
 
-statement connection::run(const std::string &sql) {
-	return run(sql.c_str());
+statement connection::query(const std::string &sql) {
+	return query(sql.c_str());
 }
+
+statement connection::run(const char *sql) {
+	return query(sql);
+}
+
+statement connection::run(const std::string &sql) {
+	return query(sql);
+}
+
 
 void connection::remove_collation(const char *name) {
 	int rv = sqlite3_create_collation_v2(handle, name, SQLITE_UTF8,

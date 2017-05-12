@@ -127,9 +127,9 @@ BOOST_AUTO_TEST_CASE(commit_handler) {
 	tab ctx;
 	bool called = false;
 	ctx.conn.set_commit_handler([&]() { called = true; return 0; });
-	ctx.conn.run("begin transaction");
-	ctx.conn.run("update items set v = 111 where id = 1");
-	ctx.conn.run("commit transaction");
+	ctx.conn.exec("begin transaction");
+	ctx.conn.exec("update items set v = 111 where id = 1");
+	ctx.conn.exec("commit transaction");
 	BOOST_CHECK(called);
 }
 
@@ -137,9 +137,9 @@ BOOST_AUTO_TEST_CASE(rollback_handler) {
 	tab ctx;
 	bool called = false;
 	ctx.conn.set_rollback_handler([&]() { called = true; });
-	ctx.conn.run("begin transaction");
-	ctx.conn.run("update items set v = 111 where id = 1");
-	ctx.conn.run("rollback transaction");
+	ctx.conn.query("begin transaction");
+	ctx.conn.query("update items set v = 111 where id = 1");
+	ctx.conn.query("rollback transaction");
 	BOOST_CHECK(called);
 }
 
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(update_handler) {
 		BOOST_CHECK_EQUAL(tabname, "items");
 		BOOST_CHECK_EQUAL(rowid, 1);
 	});
-	ctx.conn.run("update items set v = 111 where id = 1");
+	ctx.conn.query("update items set v = 111 where id = 1");
 	BOOST_CHECK(called);
 }
 
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(trace_handler) {
 		called = true;
 		BOOST_CHECK_EQUAL(q, sql);
 	});
-	ctx.conn.run(sql);
+	ctx.conn.query(sql);
 	BOOST_CHECK(called);
 }
 
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(profile_handler) {
 		called = true;
 		BOOST_CHECK_EQUAL(q, sql);
 	});
-	ctx.conn.run(sql);
+	ctx.conn.query(sql);
 	BOOST_CHECK(called);
 }
 
@@ -221,9 +221,9 @@ BOOST_AUTO_TEST_CASE(create_collation) {
 			return memcmp(lstr, rstr, minlen);
 		});
 
-	ctx.conn.run("create table tst (id integer, v varchar)");
-	ctx.conn.run("insert into tst (id, v) values (1, 'abcde'), (2, 'abxyz')");
-	auto st = ctx.conn.run("select id from tst where v = 'abc' collate prefix");
+	ctx.conn.query("create table tst (id integer, v varchar)");
+	ctx.conn.query("insert into tst (id, v) values (1, 'abcde'), (2, 'abxyz')");
+	auto st = ctx.conn.query("select id from tst where v = 'abc' collate prefix");
 	BOOST_CHECK(called);
 
 	std::vector<int> data;
@@ -244,11 +244,11 @@ BOOST_AUTO_TEST_CASE(create_function) {
 	bool called;
 
 	ctx.conn.create_function("plustwo", plustwo);
-	auto st1 = ctx.conn.run("select plustwo(v) from items where id = 1");
+	auto st1 = ctx.conn.query("select plustwo(v) from items where id = 1");
 	BOOST_CHECK_EQUAL(st1.val<int>(0), 13);
 
 	ctx.conn.create_function<int (int), plusthree>("plusthree");
-	auto st2 = ctx.conn.run("select plusthree(v) from items where id = 1");
+	auto st2 = ctx.conn.query("select plusthree(v) from items where id = 1");
 	BOOST_CHECK_EQUAL(st2.val<int>(0), 14);
 
 	called = false;
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(create_function) {
 		BOOST_CHECK_EQUAL(i, 11);
 		return i+5;
 	}));
-	auto st3 = ctx.conn.run("select plusfive(v) from items where id = 1");
+	auto st3 = ctx.conn.query("select plusfive(v) from items where id = 1");
 	BOOST_CHECK_EQUAL(st3.val<int>(0), 16);
 	BOOST_CHECK(called);
 
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE(create_function) {
 		BOOST_CHECK_EQUAL(i, 11);
 		return i+6;
 	});
-	auto st4 = ctx.conn.run("select plussix(v) from items where id = 1");
+	auto st4 = ctx.conn.query("select plussix(v) from items where id = 1");
 	BOOST_CHECK_EQUAL(st4.val<int>(0), 17);
 	BOOST_CHECK(called);
 
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(create_function) {
 		return i+7;
 	};
 	ctx.conn.create_function("plusseven", std::ref(plusseven));
-	auto st5 = ctx.conn.run("select plusseven(v) from items where id = 1");
+	auto st5 = ctx.conn.query("select plusseven(v) from items where id = 1");
 	BOOST_CHECK_EQUAL(st5.val<int>(0), 18);
 	BOOST_CHECK(called);
 }
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(create_aggregate) {
 	}, [](const int &sum) -> int {
 		return sum * sum;
 	});
-	auto st1 = ctx.conn.run("select sqsum(v) from items where id <= 2");
+	auto st1 = ctx.conn.query("select sqsum(v) from items where id <= 2");
 	BOOST_CHECK_EQUAL(called, 2);
 	BOOST_CHECK_EQUAL(st1.val<int>(0), (11+22)*(11+22));
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(create_aggregate) {
 	}, [](const int &sum) -> int {
 		return sum * sum;
 	});
-	auto st2 = ctx.conn.run("select sqsum10(v) from items where id <= 2");
+	auto st2 = ctx.conn.query("select sqsum10(v) from items where id <= 2");
 	BOOST_CHECK_EQUAL(st2.val<int>(0), (10+11+22)*(10+11+22));
 
 	// Multi parameter aggregate
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(create_aggregate) {
 	}, [](const int &sum) -> int {
 		return sum + 5;
 	});
-	auto st3 = ctx.conn.run("select aggr(v, v+1) from items where id <= 2");
+	auto st3 = ctx.conn.query("select aggr(v, v+1) from items where id <= 2");
 	BOOST_CHECK_EQUAL(st3.val<int>(0), 11*12 + 22*23 + 5);
 
 	// Simple aggregate with default `final` function
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE(create_aggregate) {
 		called++;
 		acc += i;
 	});
-	auto st4 = ctx.conn.run("select rsum(v) from items where id <= 2");
+	auto st4 = ctx.conn.query("select rsum(v) from items where id <= 2");
 	BOOST_CHECK_EQUAL(called, 2);
 	BOOST_CHECK_EQUAL(st4.val<int>(0), 33);
 }
