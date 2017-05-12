@@ -184,6 +184,18 @@ counter connection::status_cache_write(bool reset) {
 	return status(SQLITE_DBSTATUS_CACHE_WRITE, reset);
 }
 
+#if SQLITE_VERSION_NUMBER >= 3008000
+counter connection::status_deferred_fks(bool reset) {
+	return status(SQLITE_DBSTATUS_DEFERRED_FKS, reset);
+}
+#endif
+
+#if SQLITE_VERSION_NUMBER >= 3014000
+counter connection::status_cache_used_shared(bool reset) {
+	return status(SQLITE_DBSTATUS_CACHE_USED_SHARED, reset);
+}
+#endif
+
 column_metadata connection::metadata(const char *db, const char *table, const char *column) const {
 	int rv;
 	int notnull, primarykey, autoinc;

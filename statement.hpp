@@ -398,6 +398,7 @@ public:
 	int status_fullscan_step(bool reset=false);
 	int status_sort(bool reset=false);
 	int status_autoindex(bool reset=false);
+	int status_vm_step(bool reset=false);
 
 	/**
 	 * Determines if the prepared statement writes to the database.

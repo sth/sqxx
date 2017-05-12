@@ -148,6 +148,8 @@ public:
 	counter status_cache_hit(bool reset=false);
 	counter status_cache_miss(bool reset=false);
 	counter status_cache_write(bool reset=false);
+	counter status_deferred_fks(bool reset=false);
+	counter status_cache_used_shared(bool reset=false);
 
 	/**
 	 * Wraps [`sqlite3_table_column_metadata()`](http://www.sqlite.org/c3ref/table_column_metadata.html)

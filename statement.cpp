@@ -39,6 +39,12 @@ int statement::status_autoindex(bool reset) {
 	return status(SQLITE_STMTSTATUS_AUTOINDEX, reset);
 }
 
+#if SQLITE_VERSION_NUMBER >= 3008000
+int statement::status_vm_step(bool reset) {
+	return status(SQLITE_STMTSTATUS_VM_STEP, reset);
+}
+#endif
+
 bool statement::readonly() const {
 	return sqlite3_stmt_readonly(handle);
 }
