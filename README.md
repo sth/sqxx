@@ -4,7 +4,7 @@ Lightweight, object oriented, fully featured C++ 11 wrapper around libsqlite3.
 
 ## Notable features
 
-- Modern C++ interface (range-base `for` iteration over sql results, registering
+- Modern C++ interface (range-base `for` iteration over SQL results, registering
   C++ lambdas as SQL functions, ...)
 - As far as possible no overhead over calling the C API functions directly
 - Support for exotic sqlite features (register C++ lamdas as sqlite hook functions,
@@ -107,7 +107,7 @@ The most common use for such a connection object is to execute SQL queries with
 The exec() method returns a `sqxx::statement` that can be used to access the
 results of a query:
 
-	 sqxx::statement st = conn.exec("select * from items where id = 1");
+    sqxx::statement st = conn.exec("select * from items where id = 1");
 
 # Accessing result values
 
@@ -133,10 +133,12 @@ underlying sqlite3 C API will convert the value if necessary.
 
 #### Accessing multiple result rows
 
-The result rows are accessed one after another,
+The result rows are accessed one after another. After advancing to a new row
+you cannot go back to a previous one. You neded to extract all the required data
+of each row before advancing to the next one.
 
-
-The statements `done()` method can be used to check if there are 
+The statements `done()` method can be used to check if there are any more rows
+to process.
 
 ## Changed semantics compared to the C API
 
