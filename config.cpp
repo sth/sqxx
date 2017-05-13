@@ -87,8 +87,10 @@ void sqxx_call_config_log_handler(void *data, int err, const char *msg) {
 
 void config_log(const log_handler_t &fun) {
 	if (fun) {
-		std::unique_ptr<log_handler_t> cb(new log_handler_t(fun));
-		sqlite3_config(SQLITE_CONFIG_LOG, sqxx_call_config_log_handler, cb.get());
+		std::unique_ptr<log_handler_t> cb = std::make_unique<log_handler_t>(fun);
+		int rv = sqlite3_config(SQLITE_CONFIG_LOG, sqxx_call_config_log_handler, cb.get());
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
 		config_callbacks.log_handler = std::move(cb);
 	}
 	else {
@@ -97,7 +99,9 @@ void config_log(const log_handler_t &fun) {
 }
 
 void config_log() {
-	sqlite3_config(SQLITE_CONFIG_LOG, nullptr, nullptr);
+	int rv = sqlite3_config(SQLITE_CONFIG_LOG, nullptr, nullptr);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
 }
 
 void config_uri(bool enable) {
@@ -127,8 +131,11 @@ void sqxx_call_config_sqllog_handler(void *data, sqlite3* conn, const char *msg,
 
 void config_sqllog(const sqllog_handler_t &fun) {
 	if (fun) {
-		std::unique_ptr<sqllog_handler_t> cb(new sqllog_handler_t(fun));
-		sqlite3_config(SQLITE_CONFIG_SQLLOG, sqxx_call_config_sqllog_handler, cb.get());
+		std::unique_ptr<sqllog_handler_t> cb = std::make_unique<sqllog_handler_t>(fun);
+		int rv = sqlite3_config(SQLITE_CONFIG_SQLLOG, sqxx_call_config_sqllog_handler,
+				cb.get());
+		if (rv != SQLITE_OK)
+			throw static_error(rv);
 		config_callbacks.sqllog_handler = std::move(cb);
 	}
 	else {
@@ -137,7 +144,9 @@ void config_sqllog(const sqllog_handler_t &fun) {
 }
 
 void config_sqllog() {
-	sqlite3_config(SQLITE_CONFIG_SQLLOG, nullptr, nullptr);
+	int rv = sqlite3_config(SQLITE_CONFIG_SQLLOG, nullptr, nullptr);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
 }
 
 void config_mmap_size(int64_t defaultlimit, int64_t maxlimit) {
