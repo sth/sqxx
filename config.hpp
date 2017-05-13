@@ -34,6 +34,14 @@ typedef std::function<void (/*connection&,*/ const char *msg, int kind)> sqllog_
 void config_sqllog(const sqllog_handler_t &fun);
 void config_sqllog();
 void config_mmap_size(int64_t defaultlimit, int64_t maxlimit);
+/// only implemented if definded(SQLITE_WIN32_MALLOC)
+void config_win32_heapsize(uint32_t maxsize);
+/// only implemented for sqlite3 >= 3.8.8
+int config_pcache_hdrsz();
+/// only implemented for sqlite3 >= 3.8.8
+void config_pmasz(unsigned int minsize);
+/// only implemented for sqlite3 >= 3.12.0
+void config_stmtjrnl_spill(int threshold);
 
 } // namespace sqxx
 

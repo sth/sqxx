@@ -155,5 +155,39 @@ void config_mmap_size(int64_t defaultlimit, int64_t maxlimit) {
 		throw static_error(rv);
 }
 
+#if defined(SQLITE_WIN32_MALLOC)
+void config_win32_heapsize(uint32_t maxsize) {
+	int rv = sqlite3_config(SQLITE_CONFIG_WIN32_HEAPSIZE, maxsize);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+#endif
+
+#if SQLITE_VERSION_NUMBER >= 3008008
+int config_pcache_hdrsz() {
+	int result;
+	int rv = sqlite3_config(SQLITE_CONFIG_PCACHE_HDRSZ, &result);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+	return result;
+}
+#endif
+
+#if SQLITE_VERSION_NUMBER >= 3008008
+void config_pmasz(unsigned int minsize) {
+	int rv = sqlite3_config(SQLITE_CONFIG_PMASZ, minsize);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+#endif
+
+#if SQLITE_VERSION_NUMBER >= 3012000
+void config_stmtjrnl_spill(int threshold) {
+	int rv = sqlite3_config(SQLITE_CONFIG_PMASZ, threshold);
+	if (rv != SQLITE_OK)
+		throw static_error(rv);
+}
+#endif
+
 } // namespace sqxx
 
