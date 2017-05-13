@@ -369,10 +369,59 @@ void connection::interrupt() {
 	sqlite3_interrupt(handle);
 }
 
-int connection::limit(int id, int newValue) {
-	return sqlite3_limit(handle, id, newValue);
+int connection::limit(int id, int value) {
+	return sqlite3_limit(handle, id, value);
 }
 
+int connection::limit_length(int value) {
+	return limit(SQLITE_LIMIT_LENGTH, value);
+}
+
+int connection::limit_sql_length(int value) {
+	return limit(SQLITE_LIMIT_SQL_LENGTH, value);
+}
+
+int connection::limit_column(int value) {
+	return limit(SQLITE_LIMIT_COLUMN, value);
+}
+
+int connection::limit_expr_depth(int value) {
+	return limit(SQLITE_LIMIT_EXPR_DEPTH, value);
+}
+
+int connection::limit_compound_select(int value) {
+	return limit(SQLITE_LIMIT_COMPOUND_SELECT, value);
+}
+
+int connection::limit_vdbe_op(int value) {
+	return limit(SQLITE_LIMIT_VDBE_OP, value);
+}
+
+int connection::limit_function_arg(int value) {
+	return limit(SQLITE_LIMIT_FUNCTION_ARG, value);
+}
+
+int connection::limit_attached(int value) {
+	return limit(SQLITE_LIMIT_ATTACHED, value);
+}
+
+int connection::limit_like_pattern_length(int value) {
+	return limit(SQLITE_LIMIT_LIKE_PATTERN_LENGTH, value);
+}
+
+int connection::limit_variable_number(int value) {
+	return limit(SQLITE_LIMIT_VARIABLE_NUMBER, value);
+}
+
+int connection::limit_trigger_depth(int value) {
+	return limit(SQLITE_LIMIT_TRIGGER_DEPTH, value);
+}
+
+#if SQLITE_VERSION_NUMBER >= 3008007
+int connection::limit_worker_threads(int value) {
+	return limit(SQLITE_LIMIT_WORKER_THREADS, value);
+}
+#endif
 
 void connection::release_memory() {
 	sqlite3_db_release_memory(handle);

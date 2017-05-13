@@ -282,7 +282,21 @@ public:
 	 *
 	 * Wraps [`sqlite3_limit()`](http://www.sqlite.org/c3ref/limit.html)
 	 */
-	int limit(int id, int newValue);
+	int limit(int id, int value=-1);
+
+	int limit_length(int value=-1);
+	int limit_sql_length(int value=-1);
+	int limit_column(int value=-1);
+	int limit_expr_depth(int value=-1);
+	int limit_compound_select(int value=-1);
+	int limit_vdbe_op(int value=-1);
+	int limit_function_arg(int value=-1);
+	int limit_attached(int value=-1);
+	int limit_like_pattern_length(int value=-1);
+	int limit_variable_number(int value=-1);
+	int limit_trigger_depth(int value=-1);
+	/// only implemented for sqlite3 >= 3.8.7
+	int limit_worker_threads(int value=-1);
 
 	/**
 	 * Sets a busy timeout.
