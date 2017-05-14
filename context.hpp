@@ -69,6 +69,13 @@ public:
 	 * [`sqlite3_result_text()`](http://www.sqlite.org/c3ref/result_blob.html),
 	 * [`sqlite3_result_blob()`](http://www.sqlite.org/c3ref/result_blob.html),
 	 * and [`sqlite3_result_zeroblob()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 *
+	 * For sqlite3 >= v3.8.7, uses 64 bit interfaces
+	 * [`sqlite3_result_text64()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 * [`sqlite3_result_blob64()`](http://www.sqlite.org/c3ref/result_blob.html),
+	 *
+	 * For sqlite3 >= v3.8.11, uses 64 bit interface
+	 * [`sqlite3_result_zeroblob64()`](http://www.sqlite.org/c3ref/result_blob.html),
 	 */
 	template<typename R>
 	if_selected_type<R, void, int, int64_t, double>

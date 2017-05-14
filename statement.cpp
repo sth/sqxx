@@ -110,7 +110,12 @@ void statement::bind<double>(int idx, double value) {
 template<>
 void statement::bind<const char*>(int idx, const char *value, bool copy) {
 	if (value) {
-		int rv = sqlite3_bind_text(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		int rv =
+#if SQLITE_VERSION_NUMBER >= 3008007
+			sqlite3_bind_text64(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
+			sqlite3_bind_text(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
@@ -121,7 +126,12 @@ void statement::bind<const char*>(int idx, const char *value, bool copy) {
 
 template<>
 void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
-	int rv = sqlite3_bind_text(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	int rv =
+#if SQLITE_VERSION_NUMBER >= 3008007
+		sqlite3_bind_text64(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
+		sqlite3_bind_text(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 }
@@ -129,12 +139,22 @@ void statement::bind<std::string>(int idx, const std::string &value, bool copy) 
 template<>
 void statement::bind<blob>(int idx, const blob &value, bool copy) {
 	if (value.data) {
-		int rv = sqlite3_bind_blob(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		int rv = 
+#if SQLITE_VERSION_NUMBER >= 3008007
+			sqlite3_bind_blob64(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
+			sqlite3_bind_blob(handle, idx+1, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}
 	else {
-		int rv = sqlite3_bind_zeroblob(handle, idx+1, value.length);
+		int rv =
+#if SQLITE_VERSION_NUMBER >= 3008011
+			sqlite3_bind_zeroblob64(handle, idx+1, value.length);
+#else
+			sqlite3_bind_zeroblob(handle, idx+1, value.length);
+#endif
 		if (rv != SQLITE_OK)
 			throw static_error(rv);
 	}

@@ -55,18 +55,32 @@ void context::result(const char *value, bool copy) {
 	}
 }
 
+
+
 template<>
 void context::result(const std::string &value, bool copy) {
+#if SQLITE_VERSION_NUMBER >= 3008007
+	sqlite3_result_text64(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
 	sqlite3_result_text(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 }
 
 template<>
 void context::result(const blob &value, bool copy) {
 	if (value.data) {
+#if SQLITE_VERSION_NUMBER >= 3008007
+		sqlite3_result_blob64(handle, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#else
 		sqlite3_result_blob(handle, value.data, value.length, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 	}
 	else {
+#if SQLITE_VERSION_NUMBER >= 3008011
+		sqlite3_result_zeroblob64(handle, value.length);
+#else
 		sqlite3_result_zeroblob(handle, value.length);
+#endif
 	}
 }
 

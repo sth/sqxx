@@ -192,6 +192,9 @@ public:
 	 * Set a parameter to a `const char*` value.
 	 *
 	 * Wraps [`sqlite3_bind_text()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 *
+	 * For sqlite3 >= v3.8.7, uses 64 bit interfaces
+	 * [`sqlite3_result_text64()`](http://www.sqlite.org/c3ref/result_blob.html),
 	 */
 	template<typename T>
 	if_selected_type<T, void, const char*>
@@ -210,6 +213,12 @@ public:
 	 * Wraps [`sqlite3_bind_text()`](http://www.sqlite.org/c3ref/bind_blob.html),
 	 * Wraps [`sqlite3_bind_blob()`](http://www.sqlite.org/c3ref/bind_blob.html),
 	 * Wraps [`sqlite3_bind_zeroblob()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 *
+	 * For sqlite3 >= v3.8.7, uses 64 bit interfaces
+	 * Wraps [`sqlite3_bind_blob64()`](http://www.sqlite.org/c3ref/bind_blob.html),
+	 *
+	 * For sqlite3 >= v3.8.11, uses 64 bit interface
+	 * Wraps [`sqlite3_bind_zeroblob64()`](http://www.sqlite.org/c3ref/bind_blob.html),
 	 */
 	template<typename T>
 	if_selected_type<T, void, std::string, blob>
