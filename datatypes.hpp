@@ -16,11 +16,6 @@ struct blob {
 	}
 };
 
-struct counter {
-	int current;
-	int highwater;
-};
-
 namespace detail {
 
 // Check if type T is the same as any of the ones listed in Ts...

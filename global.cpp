@@ -27,7 +27,14 @@ int capi_libversion_number() {
 
 counter status(int op, bool reset) {
 	counter result;
-	int rv = sqlite3_status(op, &result.current, &result.highwater, static_cast<int>(reset));
+#if SQLITE_VERSION_NUMBER >= 3008009
+	int rv = sqlite3_status64(op, &result.current, &result.highwater, static_cast<int>(reset));
+#else
+	int highwater, current;
+	int rv = sqlite3_status(op, &current, &highwater, static_cast<int>(reset));
+	result.current = current;
+	result.highwater = highwater;
+#endif
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
 	return result;
@@ -97,11 +104,11 @@ bool complete(const std::string &sql) {
 	return complete(sql.c_str());
 }
 
-uint64_t memory_used() {
+int64_t memory_used() {
 	return sqlite3_memory_used();
 }
 
-uint64_t memory_highwater(bool reset) {
+int64_t memory_highwater(bool reset) {
 	return sqlite3_memory_highwater(reset);
 }
 
