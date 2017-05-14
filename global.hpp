@@ -37,11 +37,6 @@ const char* capi_libversion();
  */
 int capi_libversion_number();
 
-struct counter {
-	int64_t current;
-	int64_t highwater;
-};
-
 /**
  * Query Sqlite runtime status
  *

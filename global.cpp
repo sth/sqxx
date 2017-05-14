@@ -26,14 +26,12 @@ int capi_libversion_number() {
 }
 
 counter status(int op, bool reset) {
-	counter result;
 #if SQLITE_VERSION_NUMBER >= 3008009
+	tcounter<sqlite3_int64> result;
 	int rv = sqlite3_status64(op, &result.current, &result.highwater, static_cast<int>(reset));
 #else
-	int highwater, current;
+	tcounter<int> result;
 	int rv = sqlite3_status(op, &current, &highwater, static_cast<int>(reset));
-	result.current = current;
-	result.highwater = highwater;
 #endif
 	if (rv != SQLITE_OK)
 		throw static_error(rv);

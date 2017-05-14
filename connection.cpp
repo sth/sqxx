@@ -137,7 +137,7 @@ uint64_t connection::last_insert_rowid() const {
 
 counter connection::status(int op, bool reset) {
 	int rv;
-	counter result;
+	tcounter<int> result;
 	rv = sqlite3_db_status(handle, op, &result.current, &result.highwater, static_cast<int>(reset));
 	if (rv != SQLITE_OK)
 		throw static_error(rv);

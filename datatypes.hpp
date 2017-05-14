@@ -11,10 +11,23 @@ namespace sqxx {
 
 struct blob {
 	const void *data;
-	int length;
+	uint64_t length;
 	blob(const void *data_arg, int length_arg) : data(data_arg), length(length_arg) {
 	}
 };
+
+template<typename T=int64_t>
+struct tcounter {
+	T current;
+	T highwater;
+	tcounter() = default;
+
+	template<typename U>
+	tcounter(const tcounter<U> &other) : current(other.current), highwater(other.highwater) {
+	}
+};
+
+typedef tcounter<int64_t> counter;
 
 namespace detail {
 
