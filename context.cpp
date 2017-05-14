@@ -3,6 +3,7 @@
 
 #include "context.hpp"
 #include <sqlite3.h>
+#include <cstring>
 
 namespace sqxx {
 
@@ -48,7 +49,11 @@ void context::result<double>(double value) {
 template<>
 void context::result(const char *value, bool copy) {
 	if (value) {
+#if SQLITE_VERSION_NUMBER >= 3008007
+		sqlite3_result_text64(handle, value, std::strlen(value), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC), SQLITE_UTF8);
+#else
 		sqlite3_result_text(handle, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+#endif
 	}
 	else {
 		sqlite3_result_null(handle);
@@ -60,7 +65,7 @@ void context::result(const char *value, bool copy) {
 template<>
 void context::result(const std::string &value, bool copy) {
 #if SQLITE_VERSION_NUMBER >= 3008007
-	sqlite3_result_text64(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+	sqlite3_result_text64(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC), SQLITE_UTF8);
 #else
 	sqlite3_result_text(handle, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 #endif

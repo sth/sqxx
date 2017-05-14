@@ -6,6 +6,7 @@
 #include "parameter.hpp"
 #include "error.hpp"
 #include <sqlite3.h>
+#include <cstring>
 
 namespace sqxx {
 
@@ -112,7 +113,7 @@ void statement::bind<const char*>(int idx, const char *value, bool copy) {
 	if (value) {
 		int rv =
 #if SQLITE_VERSION_NUMBER >= 3008007
-			sqlite3_bind_text64(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+			sqlite3_bind_text64(handle, idx+1, value, std::strlen(value), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC), SQLITE_UTF8);
 #else
 			sqlite3_bind_text(handle, idx+1, value, -1, (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 #endif
@@ -128,7 +129,7 @@ template<>
 void statement::bind<std::string>(int idx, const std::string &value, bool copy) {
 	int rv =
 #if SQLITE_VERSION_NUMBER >= 3008007
-		sqlite3_bind_text64(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
+		sqlite3_bind_text64(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC), SQLITE_UTF8);
 #else
 		sqlite3_bind_text(handle, idx+1, value.c_str(), value.length(), (copy ? SQLITE_TRANSIENT : SQLITE_STATIC));
 #endif
