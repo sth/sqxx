@@ -1,5 +1,5 @@
 language: cpp
-script: scons ${BUILD_ARGS}
+script: scons alltests ${BUILD_ARGS}
 
 matrix:
   include:
