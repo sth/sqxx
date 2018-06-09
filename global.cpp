@@ -31,7 +31,7 @@ counter status(int op, bool reset) {
 	int rv = sqlite3_status64(op, &result.current, &result.highwater, static_cast<int>(reset));
 #else
 	tcounter<int> result;
-	int rv = sqlite3_status(op, &current, &highwater, static_cast<int>(reset));
+	int rv = sqlite3_status(op, &result.current, &result.highwater, static_cast<int>(reset));
 #endif
 	if (rv != SQLITE_OK)
 		throw static_error(rv);
