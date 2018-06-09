@@ -1,6 +1,10 @@
 
 env = Environment()
 
+env.Replace(
+       CXX = ARGUMENTS.get('CXX', 'g++')
+    )
+
 env.Append(
       CXXFLAGS = ['-std=c++14', '-Wall', '-Wextra'],
    )
