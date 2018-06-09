@@ -10,5 +10,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-5
+            - libsqlite3-dev
+            - libboost-iostreams-dev
+            - libboost-test-dev
       env:
          - BUILD_ARGS="CC=gcc-5 CXX=g++-5"
