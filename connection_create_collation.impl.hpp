@@ -33,7 +33,7 @@ template<typename Function, Function *Fun>
 sqxx_collation_compare_type collation_compare_staticfptr;
 
 template<typename Function, Function *Fun>
-int collation_compare_staticfptr(void *data, int llen, const void *lstr, int rlen, const void *rstr) {
+int collation_compare_staticfptr(void* /*data*/, int llen, const void *lstr, int rlen, const void *rstr) {
 	try {
 		return Fun(
 				llen, reinterpret_cast<const char*>(lstr),

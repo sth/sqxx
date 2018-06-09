@@ -759,19 +759,21 @@ std::pair<int, int> connection::wal_checkpoint_restart(const std::string &dbname
 }
 
 extern "C"
-void sqxx_call_collation_handler(void *data, sqlite3* conn, int textrep, const char *name) {
+void sqxx_call_collation_handler(void *data, sqlite3* /*conn*/, int textrep, const char *name) {
 	// We registered on a certain connection, and thats the connection we
 	// expect to get back here. So `conn` seems to be pretty useless here.
 	// 
 	// We store a reference to the connection in collation_data_t and then
-	// could check here if you got the right connection back
+	// could check here if you got the right connection back. But this seems
+	// unnecessary since we can assume we get the correct thing back.
+	// We could also *not* store the connection in collation_data_t and
+	// instead use the connection we get passed here. We would need to create
+	// a non-owning collection object for that to work properly.
 	collation_data_t *dat = reinterpret_cast<collation_data_t*>(data);
 	try {
+		// TODO:
 		//if (textrep != SQLITE_UTF8) {
 		//	throw error("non-utf8 collation requested");
-		//}
-		//if (conn != data->c.handle) {
-		//	throw error("invalid connection");
 		//}
 
 		// We pass the connection here because the callback will need
