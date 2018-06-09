@@ -3,6 +3,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <cmath>
+
 BOOST_AUTO_TEST_SUITE(sqxx_examples)
 
 BOOST_AUTO_TEST_CASE(example_aggregate_geom) {
@@ -14,7 +16,7 @@ BOOST_AUTO_TEST_CASE(example_aggregate_geom) {
 	};
 
 	auto geom_final = [](const geom_state &state) -> double {
-		return sqrt(state.sum * 1.0 / state.count);
+		return std::sqrt(state.sum * 1.0 / state.count);
 	};
 
 	tab ctx;
