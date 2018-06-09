@@ -1,2 +1,14 @@
 language: cpp
-script: scons
+script: scons ${BUILD_ARGS}
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - BUILD_ARGS="CC=gcc-5 CXX=g++-5"
